@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         "801513ba-a712-498c-8f57-cae55b38cc92", // Berserk (Native)
         "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", // Solo Leveling
       ];
-      const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('&');
+      const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('%26');
       
       // Check cache first to avoid blank screen on rate limits
       const cachedData = localStorage.getItem('manganex_cache');
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hottestContainer.innerHTML = '';
         
         // Take the explicitly ranked mangas to show as Hottest
-        const sortedHottest = [...allData].slice(0, 20);
+        const sortedHottest = [...allData].slice(0, 50);
         
         sortedHottest.forEach((manga, index) => {
            const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
@@ -1217,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loader.style.display = 'block';
     try {
-      const res = await fetch('https://api.mangadex.org/manga?limit=24&order[followedCount]=desc&includes[]=cover_art&contentRating[]=safe');
+      const res = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?limit=100%26order[followedCount]=desc%26includes[]=cover_art%26contentRating[]=safe`);
       const data = await res.json();
       grid.innerHTML = '';
       if(data.data) {
