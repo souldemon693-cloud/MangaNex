@@ -10,8 +10,17 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Sec-Ch-Ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1'
 };
 
 app.get('/api/proxy-manga', async (req, res) => {
@@ -91,8 +100,11 @@ app.get('/api/proxy-manga', async (req, res) => {
         // WeebCentral puts the chapter name in a span. Let's see if the text matches our chapter number.
         // We use a robust regex that checks for the number preceded by optional words like "Chapter", "Punch", etc.
         // And we ensure it's preceded by a word boundary or start of string so we don't match the "1" in "271"
-        const robustRegex = new RegExp(`(?:^|\\b)(?:Chapter|Punch|Episode|Ch\\.?)\\s*0*${escapedChapter}\\b`, 'i');
-        const fallbackRegex = new RegExp(`(?:^|\\b)0*${escapedChapter}\\b`, 'i');
+        // Ensure we only match the ACTUAL chapter number part, not dates like "1 day ago".
+        // The text typically looks like: "Chapter 1 2024-01-01" or "Chapter 1"
+        // We can restrict the match to the start of the string or immediately following "Chapter".
+        const robustRegex = new RegExp(`^\\s*(?:Chapter|Punch|Episode|Ch\\.?)\\s*0*${escapedChapter}\\b`, 'i');
+        const fallbackRegex = new RegExp(`^\\s*0*${escapedChapter}\\b`, 'i');
         
         if (robustRegex.test(textOnly) || fallbackRegex.test(textOnly)) {
           const match = block.match(/.*\/chapters\/([A-Z0-9]+)/i);
