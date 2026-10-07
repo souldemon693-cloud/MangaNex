@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
            const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
            const fileName = coverArt ? coverArt.attributes.fileName : '';
-           const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.512.jpg` : 'placeholder.jpg';
+           const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.512.jpg` : 'placeholder.jpg';
            
            const slide = document.createElement('div');
            slide.className = 'promo-slide';
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
            const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
            const fileName = coverArt ? coverArt.attributes.fileName : '';
-           const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';
+           const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';
            
            const views = Math.floor(Math.random() * 300000 + 50000).toLocaleString();
            
@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const coverRel = manga.relationships.find(r => r.type === 'cover_art');
         const coverFile = coverRel ? coverRel.attributes.fileName : '';
-        const coverUrl = coverFile ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` : '';
+        const coverUrl = coverFile ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` : '';
         
         // Build card
         const card = document.createElement('div');
@@ -1160,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const coverArt = manga.relationships ? manga.relationships.find(r => r.type === 'cover_art') : null;
     const fileName = coverArt ? coverArt.attributes.fileName : '';
-    const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';
+    const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';
     
     const card = document.createElement('div');
     card.className = 'manga-card';

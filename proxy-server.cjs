@@ -134,6 +134,32 @@ app.get('/api/proxy-manga', async (req, res) => {
   }
 });
 
+// Proxy for MangaDex Cover Images to bypass Hotlink Protection
+app.get('/api/proxy-image', async (req, res) => {
+  try {
+    const imageUrl = req.query.url;
+    if (!imageUrl) return res.status(400).send('No URL provided');
+    
+    const response = await axios({
+      method: 'get',
+      url: imageUrl,
+      responseType: 'stream',
+      headers: {
+        'Referer': 'https://mangadex.org/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
+    });
+    
+    // Copy the content-type from the image response
+    res.set('Content-Type', response.headers['content-type']);
+    res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    response.data.pipe(res);
+  } catch (err) {
+    console.error("Image Proxy Error:", err.message);
+    res.status(500).send('Error fetching image');
+  }
+});
+
 // SPA Fallback (using app.use for Express 5 compatibility instead of app.get('*'))
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
