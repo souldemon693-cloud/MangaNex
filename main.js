@@ -198,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         '789642f8-ca89-4e4e-8f7b-eee4d17ea08b', // Demon Slayer
         'c52b2ce3-7f95-469c-96b0-479524fb7a1a', // Jujutsu Kaisen
         '4f3bcae4-2d96-4c9d-932c-90181d9c873e', // My Hero Academia
-        '304ceac3-8cdb-4fe7-acf7-2b6ff7a60613', // Attack on Titan
         'db692d58-4b13-4174-ae8c-30c515c0689c', // Hunter x Hunter
         'dd8a907a-3850-4f95-ba03-ba201a8399e3', // Fullmetal Alchemist
         'a77742b1-befd-49a4-bff5-1ad4e6b0ef7b', // Chainsaw Man
@@ -246,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
         "e896c48c-3150-437d-ba57-d8567eb399ae", // Chainsaw Man (Colored)
         "db692d58-4b13-4174-ae8c-30c515c0689c", // Hunter x Hunter (Native)
         "801513ba-a712-498c-8f57-cae55b38cc92", // Berserk (Native)
-        "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", // Solo Leveling
       ];
       const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('%26');
       

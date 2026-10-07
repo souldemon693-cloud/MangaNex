@@ -30,6 +30,28 @@ app.get('/api/proxy-manga', async (req, res) => {
     
     // Clean title for search
     title = title.replace(/\(.*\)/g, '').trim();
+
+    console.log(`[Proxy] Searching for: ${title} Ch ${chapter}`);
+
+    // If the manga is Blue Lock, bypass WeebCentral entirely and scrape blmangafree.com
+    if (title.toLowerCase() === 'blue lock') {
+      console.log('[Proxy] Using blmangafree bypass for Blue Lock');
+      try {
+        const blUrl = `https://ww3.blmangafree.com/en/blue-lock-en-chapter-${chapter}`;
+        const blRes = await axios.get(blUrl);
+        const html = blRes.data;
+        const blocks = html.split('src="');
+        const pages = blocks
+          .map(b => b.split('"')[0])
+          .filter(u => u.includes('image') || u.includes('.webp') || u.includes('.jpg') || u.includes('.png'));
+
+        if (pages.length > 0) {
+          return res.json({ pages });
+        }
+      } catch (err) {
+        console.error('[Proxy] blmangafree failed, falling back...', err.message);
+      }
+    }
     
     // Alias mapping for WeebCentral
     const aliasMap = {
@@ -42,8 +64,6 @@ app.get('/api/proxy-manga', async (req, res) => {
       'Black Clover': 'Black Clover'
     };
     if (aliasMap[title]) title = aliasMap[title];
-    
-    console.log(`[Proxy] Searching for: ${title} Ch ${chapter}`);
 
     // 1. Search for series ID
     const searchRes = await axios.get(`https://weebcentral.com/search/data?text=${encodeURIComponent(title)}`, { headers: HEADERS });
