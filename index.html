@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MANGA NEXUS | Premium Manga Reader</title>
+    <meta name="description" content="Manga Nexus — The ultimate ad-free manga reader. A premium, glassmorphic UI with dynamic honeycomb backgrounds, fullscreen mode, and instant page loading from MangaDex." />
+    
+    <!-- Open Graph / Facebook / Discord -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MANGA NEXUS | Premium Reader" />
+    <meta property="og:description" content="Discover infinite worlds. The ultimate ad-free manga reading experience." />
+    <meta property="og:image" content="./logo.jpg" />
+
+    <!-- Twitter / X -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="MANGA NEXUS | Premium Reader" />
+    <meta property="twitter:description" content="Discover infinite worlds. The ultimate ad-free manga reading experience." />
+    <meta property="twitter:image" content="./logo.jpg" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Oswald:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="honeycomb-background" class="honeycomb-bg"></div>
+    <div id="app">
+      <!-- Auth View -->
+      <main id="authView" class="view auth-screen" style="display: none;">
+        <div class="auth-card">
+          <img src="./manganex-logo.jpg" alt="MangaNex Logo" class="auth-logo" style="width: 150px; height: auto; border-radius: 20px; box-shadow: 0 4px 15px rgba(46, 139, 87, 0.4); margin-bottom: 1rem;">
+          <h2>ENTER THE PROJECT</h2>
+          <p class="auth-subtitle">Only the strongest egos survive.</p>
+          <div class="auth-form">
+            <input type="text" id="usernameInput" placeholder="USERNAME" autocomplete="off">
+            <input type="password" id="passwordInput" placeholder="PASSWORD">
+            <div id="authError" class="auth-error"></div>
+            <div class="auth-actions">
+              <button id="loginBtn" class="primary-btn" style="padding: 0.8rem 1rem; font-size: 1rem;">LOGIN</button>
+              <button id="signupBtn" class="secondary-btn" style="padding: 0.8rem 1rem; font-size: 1rem;">REGISTER</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Navbar -->
+      <header class="top-nav" id="topNav">
+        <div class="logo" id="logoBtn">
+          <img src="./manganex-logo.jpg" alt="MangaNex Logo" class="custom-logo" style="height: 100%; border-radius: 12px; box-shadow: 0 2px 10px rgba(46, 139, 87, 0.3);">
+        </div>
+        
+        <nav id="navLinksContainer" class="nav-links" style="display: flex; gap: 2rem; margin-left: 3rem; align-items: center; margin-right: auto;">
+          <button class="nav-link-btn" id="updatesBtn">Updates</button>
+          <button class="nav-link-btn" id="homeBtnTop">Featured</button>
+          <button class="nav-link-btn" id="rankingBtn">Ranking</button>
+          <button class="nav-link-btn" id="mangaListBtn">Manga List</button>
+          <button class="nav-link-btn" id="creatorsBtn">Creators</button>
+          <button class="nav-link-btn" id="bookmarksTopBtn">Favorite</button>
+          <button class="nav-link-btn" id="aboutUsBtn">About Us</button>
+        </nav>
+        
+        <div class="controls" id="readerControls" style="display: none; margin-left: auto;">
+          <div class="settings-group">
+            <button id="readerHomeBtn" class="setting-btn" title="Back to Home" style="border-color: var(--blue-lock-cyan); color: var(--blue-lock-cyan);">Home 🏠</button>
+            <button id="bookmarkCurrentBtn" class="setting-btn" title="Bookmark This Page" style="border-color: #ffd700; color: #ffd700;">Bookmark 🔖</button>
+            <button id="fullscreenBtn" class="setting-btn" title="Enter Full Screen">Full Screen ⛶</button>
+            <button id="toggleDirectionBtn" class="setting-btn" title="Toggle Reading Direction">LTR Mode</button>
+            <button id="toggleSpreadBtn" class="setting-btn" title="Toggle Double Page Spread">Single Page</button>
+          </div>
+          <div class="chapter-selector">
+            <button id="prevChapterBtn" class="nav-btn small">«</button>
+            <select id="chapterSelect" aria-label="Select Chapter"></select>
+            <button id="nextChapterBtn" class="nav-btn small">»</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Homepage View (Featured) -->
+      <main id="homeView" class="view active">
+        <div class="hero">
+          <h2 class="hero-title">DISCOVER<br><span class="red-accent">INFINITE WORLDS.</span></h2>
+          <p class="hero-subtitle">The ultimate ad-free premium reading experience.</p>
+          <div class="hero-actions" style="margin-top: 2rem;">
+            <button id="discoverMangasBtn" class="primary-btn" style="background: var(--blue-lock-cyan); color: white; padding: 1rem 3rem; font-size: 1.2rem; font-weight: bold; border-radius: 50px; cursor: pointer; border: none; box-shadow: 0 4px 15px rgba(30, 144, 255, 0.4); transition: transform 0.2s;">
+              DISCOVER MANGAS
+            </button>
+          </div>
+        </div>
+        
+        <div class="home-content" style="max-width: 1400px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr 350px; gap: 2rem; padding: 0 2rem;">
+          
+          <div class="main-feed">
+            <!-- Promo Carousel -->
+            <div class="promo-carousel" id="promoCarousel" style="display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; margin-bottom: 2rem; padding-bottom: 1rem; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+               <!-- Injected by JS -->
+            </div>
+
+            <div id="catalogHeader" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <h2 class="section-title" style="font-family: 'Oswald', sans-serif; font-size: 2rem; color: var(--text-main); text-transform: uppercase;">UNDERRATED MASTERPIECES</h2>
+                
+                <div style="position: relative; width: 100%; max-width: 300px;">
+                  <input type="text" id="mangaSearchInput" placeholder="Search mangas..." style="width: 100%; padding: 0.8rem 1rem 0.8rem 2.5rem; border-radius: 25px; border: 1px solid rgba(255, 140, 0, 0.3); background: rgba(255, 255, 255, 0.8); color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 0.95rem; outline: none; transition: all 0.3s ease;">
+                  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6;">🔍</span>
+                </div>
+              </div>
+              
+              <div class="category-filters" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                <button class="filter-btn active" data-filter="all" style="background: rgba(255, 140, 0, 1); color: white; border: 1px solid rgba(255, 140, 0, 1); padding: 0.4rem 1rem; border-radius: 20px; font-weight: bold; cursor: pointer; white-space: nowrap;">All</button>
+                <button class="filter-btn" data-filter="Popular" style="background: rgba(255, 140, 0, 0.1); color: var(--text-main); border: 1px solid rgba(255, 140, 0, 0.3); padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; white-space: nowrap;">Trending</button>
+                <button class="filter-btn" data-filter="Action" style="background: rgba(255, 140, 0, 0.1); color: var(--text-main); border: 1px solid rgba(255, 140, 0, 0.3); padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; white-space: nowrap;">Action</button>
+                <button class="filter-btn" data-filter="Fantasy" style="background: rgba(255, 140, 0, 0.1); color: var(--text-main); border: 1px solid rgba(255, 140, 0, 0.3); padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; white-space: nowrap;">Fantasy</button>
+                <button class="filter-btn" data-filter="Sports" style="background: rgba(255, 140, 0, 0.1); color: var(--text-main); border: 1px solid rgba(255, 140, 0, 0.3); padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; white-space: nowrap;">Sports</button>
+                <button class="filter-btn" data-filter="Psychological" style="background: rgba(255, 140, 0, 0.1); color: var(--text-main); border: 1px solid rgba(255, 140, 0, 0.3); padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; white-space: nowrap;">Psychic</button>
+                <button class="filter-btn" data-filter="Horror" style="background: rgba(255, 140, 0, 0.1); color: var(--text-main); border: 1px solid rgba(255, 140, 0, 0.3); padding: 0.4rem 1rem; border-radius: 20px; cursor: pointer; white-space: nowrap;">Horror</button>
+              </div>
+            </div>
+            
+            <div class="manga-grid" id="mangaGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 4rem;">
+              <!-- Grid injected by JS -->
+            </div>
+          </div>
+          
+          <!-- Right Sidebar: Hottest Mangas -->
+          <aside class="sidebar">
+             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                <h2 style="font-family: 'Oswald', sans-serif; font-size: 1.6rem; color: white; margin: 0;">Hottest</h2>
+             </div>
+             <div id="hottestList" style="display: flex; flex-direction: column; gap: 1.2rem;">
+                <!-- Sidebar items injected by JS -->
+             </div>
+          </aside>
+          
+        </div>
+      </main>
+
+      <!-- Updates View -->
+      <main id="updatesView" class="view" style="display: none; max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        <h2 style="font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem; text-transform: uppercase;">Latest Updates</h2>
+        <p style="color: var(--text-main); margin-bottom: 2rem; font-size: 1.1rem;">New and awesome mangas that are only here for a limited time!</p>
+        <div id="updatesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;"></div>
+        <div id="updatesLoader" style="text-align: center; padding: 2rem; display: none;">Loading updates...</div>
+      </main>
+
+      <!-- Ranking View -->
+      <main id="rankingView" class="view" style="display: none; max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        <h2 style="font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem; text-transform: uppercase;">Top Rankings</h2>
+        <p style="color: var(--text-main); margin-bottom: 2rem; font-size: 1.1rem;">The most popular mangas globally.</p>
+        <div id="rankingGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;"></div>
+        <div id="rankingLoader" style="text-align: center; padding: 2rem; display: none;">Loading rankings...</div>
+      </main>
+
+      <!-- Manga List View -->
+      <main id="mangaListView" class="view" style="display: none; max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+          <h2 style="font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--accent-color); margin: 0; text-transform: uppercase;">All Mangas</h2>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <label style="color: var(--text-main); font-weight: 600;">Sort By:</label>
+            <select id="mangaListSort" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(255,140,0,0.3); background: white; font-family: 'Inter', sans-serif; font-size: 1rem; outline: none;">
+              <option value="popularity">Popularity</option>
+              <option value="az">A - Z</option>
+              <option value="za">Z - A</option>
+            </select>
+          </div>
+        </div>
+        <div id="fullMangaGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;"></div>
+        <div id="mangaListLoader" style="text-align: center; padding: 2rem; display: none;">Loading manga list...</div>
+      </main>
+
+      <!-- Creators View -->
+      <main id="creatorsView" class="view" style="display: none; max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        <h2 style="font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem; text-transform: uppercase;">Legendary Creators</h2>
+        <p style="color: var(--text-main); margin-bottom: 2rem; font-size: 1.1rem;">Explore masterpieces from the greatest mangakas of our time.</p>
+        <div id="creatorsList" style="display: flex; flex-direction: column; gap: 3rem;">
+          <!-- Creators injected by JS -->
+        </div>
+      </main>
+
+      <!-- Favorites View -->
+      <main id="bookmarksView" class="view" style="display: none; max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        <h2 style="font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem; text-transform: uppercase;">My Favorites</h2>
+        <p style="color: var(--text-main); margin-bottom: 2rem; font-size: 1.1rem;">Your personal manga collection.</p>
+        <div id="favoritesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;"></div>
+        <div id="favoritesEmpty" style="text-align: center; padding: 3rem; color: var(--text-main); font-size: 1.2rem; display: none;">You haven't added any favorites yet!</div>
+      </main>
+
+      <!-- About Us View -->
+      <main id="aboutView" class="view" style="display: none; max-width: 800px; margin: 4rem auto; padding: 3rem; background: rgba(255,255,255,0.9); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
+        <img src="./manganex-logo.jpg" alt="MangaNex Logo" style="width: 200px; border-radius: 20px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(255,140,0,0.2);">
+        <h2 style="font-family: 'Oswald', sans-serif; font-size: 3rem; color: var(--accent-color); margin-bottom: 1.5rem; text-transform: uppercase;">About Manga Nexus</h2>
+        <p style="color: var(--text-main); font-size: 1.2rem; line-height: 1.8; margin-bottom: 2rem;">
+          Manga Nexus is born out of a profound passion for manga and storytelling. It is designed to provide the ultimate, seamless, and ad-free reading experience for manga lovers worldwide. With features ranging from dynamic page scaling to curated lists of underrated masterpieces, it is built to honor the incredible works of legendary creators.
+        </p>
+        <div style="padding: 1.5rem; background: rgba(255,140,0,0.1); border-radius: 12px; border: 1px solid rgba(255,140,0,0.2);">
+          <h3 style="font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: var(--blue-lock-cyan); margin-bottom: 0.5rem;">Created by Arjit</h3>
+          <p style="color: var(--text-main); font-size: 1.1rem; margin: 0;">This entire platform was meticulously crafted by a single developer, Arjit, rather than a large studio or group. Enjoy the journey through infinite worlds.</p>
+        </div>
+      </main>
+
+      <!-- Reader View -->
+      <main id="readerView" class="view manga-viewer" style="display: none;">
+        <div class="page-container" id="pageContainer">
+          <div id="errorOverlay" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; text-align: center; color: white; font-family: Oswald, sans-serif; padding: 2rem; background: rgba(0,0,0,0.8); border-radius: 10px; max-width: 600px; border: 2px solid var(--danger-red);">
+          </div>
+          <div class="page-flipper" id="pageFlipper">
+            <img src="" alt="" class="manga-page hidden" id="mangaPageLeft">
+            <img src="" alt="" class="manga-page hidden" id="mangaPageRight">
+          </div>
+        </div>
+        
+        <div class="page-controls">
+          <button id="prevBtn" class="nav-btn prev">← Prev</button>
+          <span id="pageInfo" class="page-info">Page 1</span>
+          <button id="nextBtn" class="nav-btn next">Next →</button>
+        </div>
+      </main>
+
+      <!-- Fact Detail Modal -->
+      <div class="fact-modal" id="factModal">
+        <div class="modal-content" style="background: var(--panel-bg); padding: 3rem; border-radius: 12px; border: 1px solid rgba(46, 139, 87, 0.3);">
+          <button class="close-btn" id="closeFactBtn" style="color: var(--text-main); font-size: 2rem;">&times;</button>
+          <h2 id="factModalTitle" style="font-family: 'Oswald', sans-serif; font-size: 2.5rem; color: var(--accent-color); margin-bottom: 1rem;">Fact Title</h2>
+          <p id="factModalText" style="font-size: 1.2rem; line-height: 1.8; color: var(--text-main);"></p>
+        </div>
+      </div>
+      
+      <!-- Notification Toast -->
+      <div id="toast" class="toast"></div>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
