@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Added fully native/colored editions of famous mangas that don't trigger proxy errors!
       const rankedIds = [
         "4141c5dc-c525-4df5-afd7-cc7d192a832f", // Blue Lock (Native)
-        "c52b2ce3-7f95-469c-96b0-479524fc7a1a", // Jujutsu Kaisen
+        "c52b2ce3-7f95-469c-96b0-479524fb7a1a", // Jujutsu Kaisen
         "a2c1d849-af05-4bbc-b2a7-866ebb10331f", // One Piece (Colored)
         "a787b10a-02d0-46c0-8236-0d01d69ad4a3", // Naruto (Colored)
         "a460ab18-22c1-47eb-a08a-9ee85fe37ec8", // Bleach (Colored)
