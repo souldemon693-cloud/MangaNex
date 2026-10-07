@@ -160,6 +160,32 @@ app.get('/api/proxy-image', async (req, res) => {
   }
 });
 
+// Proxy for MangaDex JSON API to bypass browser adblockers/CORS
+app.get('/api/proxy-mangadex', async (req, res) => {
+  try {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).json({ error: 'No URL provided' });
+    
+    // Ensure they are only proxying to api.mangadex.org for safety
+    if (!targetUrl.startsWith('https://api.mangadex.org/')) {
+       return res.status(403).json({ error: 'Forbidden target URL' });
+    }
+
+    const response = await axios({
+      method: 'get',
+      url: targetUrl,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
+    });
+    
+    res.json(response.data);
+  } catch (err) {
+    console.error("MangaDex API Proxy Error:", err.message);
+    res.status(500).json({ error: 'Error proxying MangaDex API' });
+  }
+});
+
 // SPA Fallback (using app.use for Express 5 compatibility instead of app.get('*'))
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
