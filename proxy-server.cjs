@@ -134,8 +134,8 @@ app.get('/api/proxy-manga', async (req, res) => {
   }
 });
 
-// SPA Fallback
-app.get('*', (req, res) => {
+// SPA Fallback (using app.use for Express 5 compatibility instead of app.get('*'))
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
