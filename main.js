@@ -275,11 +275,11 @@ document.addEventListener('DOMContentLoaded', () => {
           // If no cache, use this ultra-reliable hardcoded fallback so the app never crashes
           console.warn("No cache found. Using hardcoded emergency fallback.");
           const fallbackData = [
-            { id: "4141c5dc-c525-4df5-afd7-cc7d192a832f", attributes: { title: { en: "Blue Lock" } }, relationships: [{ type: "cover_art", attributes: { fileName: "3d59ea2c-4903-4551-add8-22ba8c91970b.jpg" } }] },
-            { id: "a2c1d849-af05-4bbc-b2a7-866ebb10331f", attributes: { title: { en: "One Piece" } }, relationships: [{ type: "cover_art", attributes: { fileName: "fbe15779-1a74-4b53-ae16-cdd23102d9bb.jpg" } }] },
-            { id: "c52b2ce3-7f95-469c-96b0-479524fb7a1a", attributes: { title: { en: "Jujutsu Kaisen" } }, relationships: [{ type: "cover_art", attributes: { fileName: "1b88e17b-d0cd-498c-ab22-e3a89e1a1796.jpg" } }] },
-            { id: "db692d58-4b13-4174-ae8c-30c515c0689c", attributes: { title: { en: "Hunter x Hunter" } }, relationships: [{ type: "cover_art", attributes: { fileName: "87c473f6-ad39-4467-bc22-b94f06118ffb.jpg" } }] },
-            { id: "801513ba-a712-498c-8f57-cae55b38cc92", attributes: { title: { en: "Berserk" } }, relationships: [{ type: "cover_art", attributes: { fileName: "7ecadcf8-e6d2-43bb-a579-9e01f01de5bb.jpg" } }] }
+            { id: "4141c5dc-c525-4df5-afd7-cc7d192a832f", attributes: { title: { en: "Blue Lock" } }, relationships: [{ type: "cover_art", attributes: { fileName: "7ee723d4-b926-4a81-acd9-53adb3fbe461.jpg" } }] },
+            { id: "a2c1d849-af05-4bbc-b2a7-866ebb10331f", attributes: { title: { en: "One Piece" } }, relationships: [{ type: "cover_art", attributes: { fileName: "da0341d8-5526-452c-8bd3-dc8e3cd89f99.jpg" } }] },
+            { id: "c52b2ce3-7f95-469c-96b0-479524fb7a1a", attributes: { title: { en: "Jujutsu Kaisen" } }, relationships: [{ type: "cover_art", attributes: { fileName: "6d9134b2-21ea-4d02-ac2b-7c0d1c6a2aaa.jpg" } }] },
+            { id: "db692d58-4b13-4174-ae8c-30c515c0689c", attributes: { title: { en: "Hunter x Hunter" } }, relationships: [{ type: "cover_art", attributes: { fileName: "aa112927-f1e5-4fe4-a4db-7fd4a1536e3c.jpg" } }] },
+            { id: "801513ba-a712-498c-8f57-cae55b38cc92", attributes: { title: { en: "Berserk" } }, relationships: [{ type: "cover_art", attributes: { fileName: "81e1c82d-6672-400c-8c58-4ff9bfb89031.jpg" } }] }
           ];
           allMangaDataCache = fallbackData;
           renderGrid(fallbackData);
