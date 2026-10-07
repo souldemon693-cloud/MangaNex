@@ -250,13 +250,31 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
       const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('&');
       
-      // Fetch user's requested mangas
-      const res1 = await fetch(`https://api.mangadex.org/manga?limit=40&includes[]=cover_art&${idsQuery}`);
-      const data1 = await res1.json();
+      // Check cache first to avoid blank screen on rate limits
+      const cachedData = localStorage.getItem('manganex_cache');
+      let data1 = { data: [] };
+      let data2 = { data: [] };
       
-      // Fetch 100 popular mangas to pad the list
-      const res2 = await fetch(`https://api.mangadex.org/manga?limit=100&includes[]=cover_art&order[followedCount]=desc&contentRating[]=safe&contentRating[]=suggestive`);
-      const data2 = await res2.json();
+      try {
+        const res1 = await fetch(`https://api.mangadex.org/manga?limit=40&includes[]=cover_art&${idsQuery}`);
+        if (!res1.ok) throw new Error('API Rate Limit or Error');
+        data1 = await res1.json();
+        
+        const res2 = await fetch(`https://api.mangadex.org/manga?limit=100&includes[]=cover_art&order[followedCount]=desc&contentRating[]=safe&contentRating[]=suggestive`);
+        if (!res2.ok) throw new Error('API Rate Limit or Error');
+        data2 = await res2.json();
+      } catch (err) {
+        console.warn("MangaDex API fetch failed, falling back to cache if available:", err);
+        if (cachedData) {
+          const parsedCache = JSON.parse(cachedData);
+          allMangaDataCache = parsedCache;
+          renderGrid(parsedCache);
+          renderCarousel(parsedCache);
+          return;
+        } else {
+          throw err;
+        }
+      }
       
       let allData = [];
       
@@ -311,6 +329,11 @@ document.addEventListener('DOMContentLoaded', () => {
         [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
       }
       allData = [...topRanked, ...remaining];
+      
+      // Save to cache for future requests to prevent rate limit errors showing a blank screen
+      localStorage.setItem('manganex_cache', JSON.stringify(allData));
+      
+      allMangaDataCache = allData;
       
       // Render Promo Carousel (Top 10 mangas)
       function renderCarousel() {
