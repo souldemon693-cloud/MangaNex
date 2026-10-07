@@ -1233,7 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loader.style.display = 'block';
     try {
-      const res = await fetch('https://api.mangadex.org/manga?limit=24&order[latestUploadedChapter]=desc&includes[]=cover_art&contentRating[]=safe');
+      const res = await fetch(`/api/proxy-mangadex?url=${encodeURIComponent('https://api.mangadex.org/manga?limit=24&order[latestUploadedChapter]=desc&includes[]=cover_art&contentRating[]=safe')}`);
       const data = await res.json();
       grid.innerHTML = '';
       if(data.data) {

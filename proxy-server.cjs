@@ -6,8 +6,24 @@ const path = require('path');
 const app = express();
 app.use(cors());
 
+// Anti-caching for HTML entry points to ensure browsers always load latest client updates
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path === '/index.html') {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+});
+
 // Serve static frontend files if they exist (for production deployment)
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'dist'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
@@ -23,7 +39,34 @@ const HEADERS = {
   'Upgrade-Insecure-Requests': '1'
 };
 
-const seriesCache = {};
+// Pre-populated verified series IDs for lightning-fast lookups (bypasses search latency & blocks)
+const seriesCache = {
+  "blue lock": "01J76XYD7E91K8QP6CY0Y53900",
+  "jujutsu kaisen": "01J76XYCERXE60T7FKXVCCAQ0H",
+  "attack on titan": "01J76XY7KWP8KX5RFGVZY5TR95",
+  "shingeki no kyojin": "01J76XY7KWP8KX5RFGVZY5TR95",
+  "solo leveling": "01J76XYCPSY3C4BNPBRY8JMCBE",
+  "one piece": "01J76XY7E9FNDZ1DBBM6PBJPFK",
+  "naruto": "01J76XY7E827QQQT0ERKCGH4CD",
+  "bleach": "01J76XY7E4JCPK14V53BVQWD9Y",
+  "chainsaw man": "01J76XYCRVY3QGYAMRR3STW941",
+  "demon slayer": "01J76XYBPP2A7D38XGF4PSQVPD",
+  "kimetsu no yaiba": "01J76XYBPP2A7D38XGF4PSQVPD",
+  "my hero academia": "01J76XYAE4S59RVPJETN0MFRX5",
+  "boku no hero academia": "01J76XYAE4S59RVPJETN0MFRX5",
+  "berserk": "01J76XY7EF75DJNQCV04HTPDZK",
+  "hunter x hunter": "01J76XY7EXQV9RE9KQ3JYE0WZ9",
+  "dragon ball": "01J76XY8QP28R81ZVFQ9Q3N5PQ",
+  "death note": "01J76XY7FYW2T2SDXP32NEFY8H",
+  "black clover": "01J76XYB8HNWARAQ67A4GAWG5Y",
+  "vinland saga": "01J76XY7FQY59WRK2YWX5T4E5N",
+  "sakamoto days": "01J76XYE3130E1W5HKTJ7VD912",
+  "one-punch man": "01J76XY7KT7J224EBK6J816Y1Q",
+  "haikyuu!!": "01J76XY868R0R68Z6605Y50N5W",
+  "tokyo ghoul": "01J76XY7EH974P6P8Q1V8K827Q",
+  "toukyou ghoul": "01J76XY7EH974P6P8Q1V8K827Q"
+};
+
 const chapterListCache = {};
 const chapterPagesCache = {};
 
@@ -52,7 +95,8 @@ const aliasMap = {
   'haikyuu!!': 'Haikyuu!!',
   'sakamoto days': 'Sakamoto Days',
   'oshi no ko': 'Oshi no Ko',
-  'spy x family': 'Spy x Family'
+  'spy x family': 'Spy x Family',
+  'one-punch man': 'One-Punch Man'
 };
 
 async function getSeriesId(rawTitle) {
@@ -60,9 +104,8 @@ async function getSeriesId(rawTitle) {
   const lower = title.toLowerCase();
   const searchTitle = aliasMap[lower] || title;
   
-  if (seriesCache[searchTitle.toLowerCase()]) {
-    return seriesCache[searchTitle.toLowerCase()];
-  }
+  if (seriesCache[lower]) return seriesCache[lower];
+  if (seriesCache[searchTitle.toLowerCase()]) return seriesCache[searchTitle.toLowerCase()];
 
   const searchRes = await axios.get(`https://weebcentral.com/search/data?text=${encodeURIComponent(searchTitle)}`, { headers: HEADERS });
   const searchHtml = searchRes.data;
@@ -220,18 +263,19 @@ app.get('/api/proxy-manga', async (req, res) => {
   }
 });
 
-// Proxy for MangaDex Cover Images to bypass Hotlink Protection
+// Proxy for MangaDex Cover Images or external CDN images
 app.get('/api/proxy-image', async (req, res) => {
   try {
     const imageUrl = req.query.url;
     if (!imageUrl) return res.status(400).send('No URL provided');
     
+    const referer = imageUrl.includes('mangadex.org') ? 'https://mangadex.org/' : 'https://weebcentral.com/';
     const response = await axios({
       method: 'get',
       url: imageUrl,
       responseType: 'stream',
       headers: {
-        'Referer': 'https://mangadex.org/',
+        'Referer': referer,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
       }
     });
@@ -248,7 +292,13 @@ app.get('/api/proxy-image', async (req, res) => {
 // Proxy for MangaDex JSON API to bypass browser adblockers/CORS
 app.get('/api/proxy-mangadex', async (req, res) => {
   try {
-    const targetUrl = req.query.url;
+    let targetUrl = req.query.url;
+    if (req.url.includes('?url=')) {
+      targetUrl = req.url.substring(req.url.indexOf('?url=') + 5);
+      try {
+        targetUrl = decodeURIComponent(targetUrl);
+      } catch (e) {}
+    }
     if (!targetUrl) return res.status(400).json({ error: 'No URL provided' });
     
     if (!targetUrl.startsWith('https://api.mangadex.org/')) {
@@ -270,8 +320,11 @@ app.get('/api/proxy-mangadex', async (req, res) => {
   }
 });
 
-// SPA Fallback
+// SPA Fallback with anti-cache headers for index.html
 app.use((req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
