@@ -348,13 +348,13 @@ document.addEventListener('DOMContentLoaded', () => {
       allMangaDataCache = allData;
       
       // Render Promo Carousel (Top 10 mangas)
-      function renderCarousel() {
+      function renderCarousel(mangas) {
         const carousel = document.getElementById('promoCarousel');
         if(!carousel) return;
         carousel.innerHTML = '';
         
         // Grab 10 mangas instead of 5
-        const top10 = topRanked.slice(0, 10);
+        const top10 = (mangas || []).slice(0, 10);
         top10.forEach(manga => {
            const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
            const coverArt = manga.relationships.find(r => r.type === 'cover_art');
@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
       }
       
-      renderCarousel();
+      renderCarousel(allData);
       
       allMangaDataCache = allData;
       renderGrid(allData);
