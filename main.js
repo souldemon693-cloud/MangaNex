@@ -61,9 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
     isRTL: true, // Default to RTL for manga!
     isSpread: false,
     inReaderMode: false,
-    useMangaDex: false,
     mangaDexId: null,
-    mangaDexChapters: null,
+    currentMangaTitle: '',
+    availableChapters: [],
+    maxChapter: 100,
     currentChapterPages: null
   };
   let bookmarks = JSON.parse(localStorage.getItem('manganexBookmarks')) || [];
@@ -76,11 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load saved state
   const savedState = localStorage.getItem('egozoneState');
   if (savedState) {
-    state = { ...state, ...JSON.parse(savedState) };
-    if (state.currentMangaId === '01j76xyd7e91k8qp6cy0y53900' || !state.useMangaDex) {
-      state.currentMangaId = '';
-      state.useMangaDex = true;
-    }
+    try {
+      const parsed = JSON.parse(savedState);
+      state = { ...state, ...parsed };
+      state.currentChapterPages = null; // Always fresh load pages
+    } catch (e) {}
   }
 
   // ---- Auth Logic ----
@@ -152,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     state.currentMangaTitle = mangaTitle || 'Unknown';
-    state.useMangaDex = true;
     state.mangaDexId = mangaId;
     
     const existing = bookmarks.find(b => b.id === mangaId);
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
        state.page = 1;
     }
     
-    state.mangaDexChapters = null;
+    state.availableChapters = [];
     state.currentChapterPages = null;
     state.maxChapter = 100;
     
@@ -234,7 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Explicit Ranking requested by user (Max 40 for the API limit)
       // Added fully native/colored editions of famous mangas that don't trigger proxy errors!
       const rankedIds = [
+        "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", // Solo Leveling
         "4141c5dc-c525-4df5-afd7-cc7d192a832f", // Blue Lock (Native)
+        "304cefd3-89ab-473e-ac87-3209598bd049", // Attack on Titan (Colored)
         "c52b2ce3-7f95-469c-96b0-479524fb7a1a", // Jujutsu Kaisen
         "a2c1d849-af05-4bbc-b2a7-866ebb10331f", // One Piece (Colored)
         "a787b10a-02d0-46c0-8236-0d01d69ad4a3", // Naruto (Colored)
@@ -504,25 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         card.addEventListener('click', () => {
-          state.currentMangaTitle = title;
-          state.useMangaDex = true;
-          state.mangaDexId = manga.id;
-          
-          const existing = bookmarks.find(b => b.id === manga.id);
-          if (existing) {
-             state.chapter = existing.chapter;
-             state.page = existing.page;
-          } else {
-             state.chapter = 1;
-             state.page = 1;
-          }
-          
-          state.mangaDexChapters = null;
-          state.currentChapterPages = null;
-          state.maxChapter = 100;
-          
-          saveState();
-          navigateToReader();
+          openManga(manga.id, title);
         });
         
         // Extract tags for category filtering
@@ -696,6 +680,9 @@ document.addEventListener('DOMContentLoaded', () => {
     rebuildChapterSelect();
     saveState();
     loadPage();
+
+    // Fetch full chapter list from proxy to populate all 300+ chapters!
+    loadChaptersForCurrentManga();
   }
 
   function navigateToHome() {
@@ -736,12 +723,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function rebuildChapterSelect() {
     chapterSelect.innerHTML = '';
-    const max = state.maxChapter || MAX_CHAPTER;
-    for (let i = 1; i <= max; i++) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = `Chapter ${i}`;
-      chapterSelect.appendChild(option);
+    if (state.availableChapters && state.availableChapters.length > 0) {
+      for (const ch of state.availableChapters) {
+        const option = document.createElement('option');
+        option.value = ch.number;
+        option.textContent = ch.text || `Chapter ${ch.number}`;
+        chapterSelect.appendChild(option);
+      }
+    } else {
+      const max = state.maxChapter || MAX_CHAPTER;
+      for (let i = 1; i <= max; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `Chapter ${i}`;
+        chapterSelect.appendChild(option);
+      }
     }
     chapterSelect.value = state.chapter;
   }
@@ -831,58 +827,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   chapterSelect.addEventListener('change', (e) => {
-    state.chapter = parseInt(e.target.value);
+    state.chapter = parseFloat(e.target.value);
     state.page = 1;
+    state.currentChapterPages = null;
     if (mangaPageLeft) mangaPageLeft.src = '';
     if (mangaPageRight) mangaPageRight.src = '';
     loadPage();
   });
 
   prevChapterBtn.addEventListener('click', () => {
-    if (state.chapter > 1) {
-      state.chapter--;
-      chapterSelect.value = state.chapter;
-      state.page = 1;
-      if (mangaPageLeft) mangaPageLeft.src = '';
-      if (mangaPageRight) mangaPageRight.src = '';
-      loadPage();
-    }
+    goToPrevChapter();
   });
 
   nextChapterBtn.addEventListener('click', () => {
-    if (state.chapter < (state.maxChapter || MAX_CHAPTER)) {
-      state.chapter++;
-      chapterSelect.value = state.chapter;
-      state.page = 1;
-      if (mangaPageLeft) mangaPageLeft.src = '';
-      if (mangaPageRight) mangaPageRight.src = '';
-      loadPage();
-    }
+    goToNextChapter();
   });
 
   function getImageUrl(chapter, page) {
-    if (state.useMangaDex) {
-      return state.currentChapterPages ? state.currentChapterPages[page - 1] : null;
+    if (state.currentChapterPages && state.currentChapterPages.length > 0) {
+      return state.currentChapterPages[page - 1] || null;
     }
-    // Serve high-quality fallback placeholder manga pages for blocked series!
-    // Alternate between the two generated pages for a continuous reading feel.
-    return page % 2 !== 0 ? '/manga_page_1.png' : '/manga_page_2.png';
+    return null;
   }
 
   function preloadImage(chapter, page) {
-    if (state.useMangaDex && state.currentChapterPages && page > state.currentChapterPages.length) return;
-    const key = `${chapter}-${page}`;
-    if (!preloadedImages[key]) {
-      const url = getImageUrl(chapter, page);
-      if (url) {
-        const img = new Image();
-        img.src = url;
-        preloadedImages[key] = img;
-      }
+    if (!state.currentChapterPages || page > state.currentChapterPages.length) return;
+    const url = state.currentChapterPages[page - 1];
+    if (url && !preloadedImages[url]) {
+      const img = new Image();
+      img.src = url;
+      preloadedImages[url] = img;
     }
   }
 
   function preloadAhead() {
+    if (!state.currentChapterPages) return;
     let pagesToPreload = state.isSpread ? 4 : 2;
     for (let i = 1; i <= pagesToPreload; i++) {
       preloadImage(state.chapter, state.page + (state.isSpread ? 1 : 0) + i);
@@ -905,134 +884,183 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  async function fetchMangaDexChapter(chapterNumber) {
+  async function loadChaptersForCurrentManga() {
+    if (!state.currentMangaTitle) return;
     try {
-      if (!state.mangaDexId) {
-        const searchRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?title=${encodeURIComponent(state.currentMangaTitle)}%26limit=1`);
-        const searchData = await searchRes.json();
-        if (!searchData.data || searchData.data.length === 0) throw new Error("Manga not found");
-        state.mangaDexId = searchData.data[0].id;
+      const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
+      const res = await fetch(`${baseUrl}/api/proxy-chapters?title=${encodeURIComponent(state.currentMangaTitle)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.chapters && data.chapters.length > 0) {
+          state.availableChapters = data.chapters;
+          state.maxChapter = data.maxChapter;
+          rebuildChapterSelect();
+          return;
+        }
       }
-      if (!state.mangaDexChapters) {
+    } catch (e) {
+      console.warn("Failed to load chapters from proxy:", e.message);
+    }
+
+    // Fallback to MangaDex aggregate
+    try {
+      if (state.mangaDexId) {
         const aggRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga/${state.mangaDexId}/aggregate?translatedLanguage[]=en`);
         const aggData = await aggRes.json();
-        const chapters = {};
+        const chList = [];
         let maxCh = 1;
-        for (const vol of Object.values(aggData.volumes)) {
-          for (const ch of Object.values(vol.chapters)) {
-            chapters[ch.chapter] = ch.id;
-            const num = parseFloat(ch.chapter);
-            if (!isNaN(num) && num > maxCh) maxCh = Math.floor(num);
+        if (aggData.volumes) {
+          for (const vol of Object.values(aggData.volumes)) {
+            for (const ch of Object.values(vol.chapters)) {
+              const num = parseFloat(ch.chapter);
+              if (!isNaN(num)) {
+                if (num > maxCh) maxCh = Math.floor(num);
+                chList.push({ number: num, text: `Chapter ${num}`, id: ch.id });
+              }
+            }
           }
         }
-        state.mangaDexChapters = chapters;
-        state.maxChapter = maxCh;
-        rebuildChapterSelect();
+        chList.sort((a,b) => a.number - b.number);
+        if (chList.length > 0) {
+          state.availableChapters = chList;
+          state.maxChapter = maxCh;
+          rebuildChapterSelect();
+        }
       }
-      
-      let chapterUuid = state.mangaDexChapters[String(chapterNumber)];
-      
-      // If the specific chapter doesn't exist (e.g. Chapter 1 is missing), fallback to the first available chapter!
-      if (!chapterUuid) {
-          const availableChapters = Object.keys(state.mangaDexChapters).map(Number).filter(n => !isNaN(n)).sort((a,b) => a-b);
-          if (availableChapters.length > 0) {
-              const lowestCh = availableChapters[0];
-              chapterUuid = state.mangaDexChapters[String(lowestCh)];
-              state.chapter = lowestCh; // Update the UI to reflect the actual chapter loaded
-              chapterSelect.value = lowestCh;
-              console.log(`Chapter ${chapterNumber} missing. Auto-falling back to Chapter ${lowestCh}`);
-          } else {
-              throw new Error("No chapters found for this manga.");
-          }
-      }
-      
-      const serverRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/at-home/server/${chapterUuid}`);
-      const serverData = await serverRes.json();
-      const baseUrl = serverData.baseUrl;
-      const hash = serverData.chapter.hash;
-      
-      if (!hash || !serverData.chapter.data || serverData.chapter.data.length === 0) {
-          throw new Error("MangaDex does not host this chapter (External Redirect).");
-      }
-      
-      state.currentChapterPages = serverData.chapter.data.map(filename => `${baseUrl}/data/${hash}/${filename}`);
     } catch (e) {
-      console.error("MangaDex Error:", e.message);
-      
-      // Fallback to local WeebCentral proxy server
+      console.warn("MangaDex aggregate fallback failed:", e.message);
+    }
+  }
+
+  async function fetchChapterPages(chapterNumber) {
+    state.currentChapterPages = null;
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
+
+    // 1. Try local proxy scraper (WeebCentral) first - contains 100% full scans for all chapters!
+    try {
+      console.log(`[Reader] Fetching Chapter ${chapterNumber} of "${state.currentMangaTitle}" via proxy...`);
+      const res = await fetch(`${baseUrl}/api/proxy-manga?title=${encodeURIComponent(state.currentMangaTitle)}&chapter=${chapterNumber}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.pages && data.pages.length > 0) {
+          state.currentChapterPages = data.pages;
+          console.log(`[Reader] Successfully loaded ${data.pages.length} pages from proxy!`);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn(`[Reader] Proxy failed for Ch ${chapterNumber}:`, e.message);
+    }
+
+    // 2. Fallback to MangaDex if proxy unavailable
+    if (state.mangaDexId) {
       try {
-        console.log(`Trying local proxy for ${state.currentMangaTitle} Chapter ${chapterNumber}...`);
-        const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
-        const proxyRes = await fetch(`${baseUrl}/api/proxy-manga?title=${encodeURIComponent(state.currentMangaTitle)}&chapter=${chapterNumber}`);
-        if (!proxyRes.ok) {
-            const errData = await proxyRes.json();
-            throw new Error(errData.error || "Proxy failed");
+        console.log(`[Reader] Trying MangaDex fallback for Chapter ${chapterNumber}...`);
+        let chapterUuid = null;
+        if (state.availableChapters && state.availableChapters.length > 0) {
+          const found = state.availableChapters.find(c => c.number === parseFloat(chapterNumber));
+          if (found && found.id && found.id.length > 30) chapterUuid = found.id;
         }
-        const proxyData = await proxyRes.json();
-        if (proxyData.pages && proxyData.pages.length > 0) {
-            state.currentChapterPages = proxyData.pages;
-            console.log("Successfully loaded from proxy!");
-            return;
-        } else {
-            throw new Error("Proxy returned empty pages array");
+        if (!chapterUuid) {
+          const chSearchRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/chapter?manga=${state.mangaDexId}&chapter=${chapterNumber}&translatedLanguage[]=en&limit=1`);
+          const chData = await chSearchRes.json();
+          if (chData.data && chData.data.length > 0) {
+            chapterUuid = chData.data[0].id;
+          }
         }
-      } catch (proxyError) {
-        console.error("Proxy Error:", proxyError.message);
-        state.currentChapterPages = [];
-        showToast("Failed to fetch chapter from MangaDex & Proxy.");
+        if (chapterUuid) {
+          const serverRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/at-home/server/${chapterUuid}`);
+          const serverData = await serverRes.json();
+          const baseUrl = serverData.baseUrl;
+          const hash = serverData.chapter?.hash;
+          if (hash && serverData.chapter?.data && serverData.chapter.data.length >= 5) {
+            state.currentChapterPages = serverData.chapter.data.map(f => `${baseUrl}/data/${hash}/${f}`);
+            console.log(`[Reader] Loaded ${state.currentChapterPages.length} pages from MangaDex!`);
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn(`[Reader] MangaDex fallback failed:`, e.message);
       }
     }
+
+    state.currentChapterPages = [];
+    return false;
   }
 
   async function loadPage(animationDir = null) {
     if (!state.inReaderMode) return;
     isEndOfChapter = false;
     saveState();
-    
+
     if (animationDir) applyAnimation(animationDir);
 
     const errorOverlay = document.getElementById('errorOverlay');
     if (errorOverlay) errorOverlay.style.display = 'none';
 
-    pageInfo.textContent = `Loading...`;
+    // If pages for the current chapter are not loaded yet, fetch them!
+    if (!state.currentChapterPages || state.currentChapterPages.length === 0) {
+      pageInfo.textContent = `Loading Ch ${state.chapter}...`;
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      isLoading = true;
+
+      const success = await fetchChapterPages(state.chapter);
+      if (!success || !state.currentChapterPages || state.currentChapterPages.length === 0) {
+        isLoading = false;
+        if (errorOverlay) {
+          errorOverlay.innerHTML = `<h3>CHAPTER UNAVAILABLE</h3><p style="font-size: 1rem; color: #ccc; margin-top: 1rem; font-family: Inter, sans-serif; font-weight: normal;">Could not load Chapter ${state.chapter} for "${state.currentMangaTitle}". Please choose another chapter or click Retry.</p><button id="retryChBtn" class="primary-btn" style="margin-top: 1rem; padding: 0.5rem 1.5rem; cursor: pointer;">Retry Chapter</button>`;
+          errorOverlay.style.display = 'block';
+          const retryBtn = document.getElementById('retryChBtn');
+          if (retryBtn) retryBtn.onclick = () => {
+            state.currentChapterPages = null;
+            loadPage();
+          };
+        }
+        pageInfo.textContent = "Error";
+        return;
+      }
+    }
+
+    const totalPages = state.currentChapterPages.length;
+    if (state.page > totalPages) state.page = totalPages;
+    if (state.page < 1) state.page = 1;
+
+    isLoading = true;
     prevBtn.disabled = true;
     nextBtn.disabled = true;
 
-    if (state.useMangaDex && (!state.currentChapterPages || state.currentChapterPages.length === 0 || animationDir === null)) {
-      await fetchMangaDexChapter(state.chapter);
-    }
-
     if (state.isSpread) {
-      const url1 = getImageUrl(state.chapter, state.page);
-      const url2 = getImageUrl(state.chapter, state.page + 1);
+      const url1 = state.currentChapterPages[state.page - 1] || null;
+      const url2 = state.currentChapterPages[state.page] || null;
 
       if (url1) {
         mangaPageLeft.src = url1;
         mangaPageLeft.classList.remove('hidden');
         mangaPageLeft.classList.add('spread');
-        
+
         if (url2) {
           mangaPageRight.src = url2;
           mangaPageRight.classList.remove('hidden');
           mangaPageRight.classList.add('spread');
-          pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page}-${state.page + 1}`;
-          
+          pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page}-${state.page + 1} / ${totalPages}`;
+
           Promise.all([loadImagePromise(url1), loadImagePromise(url2)]).then(() => {
-             isLoading = false;
-             prevBtn.disabled = state.page === 1;
-             nextBtn.disabled = false;
-             preloadAhead();
+            isLoading = false;
+            prevBtn.disabled = state.page === 1;
+            nextBtn.disabled = false;
+            preloadAhead();
           }).catch(handleImageError);
         } else {
           mangaPageRight.classList.add('hidden');
-          pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page} (End)`;
+          pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page} / ${totalPages} (End)`;
           isEndOfChapter = true;
-          
+
           loadImagePromise(url1).then(() => {
-             isLoading = false;
-             prevBtn.disabled = state.page === 1;
-             nextBtn.disabled = false;
-             preloadAhead();
+            isLoading = false;
+            prevBtn.disabled = state.page === 1;
+            nextBtn.disabled = false;
+            preloadAhead();
           }).catch(handleImageError);
         }
       } else {
@@ -1041,19 +1069,23 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       mangaPageLeft.classList.add('hidden');
       mangaPageRight.classList.remove('spread');
-      
-      const url = getImageUrl(state.chapter, state.page);
+
+      const url = state.currentChapterPages[state.page - 1] || null;
       if (url) {
         mangaPageRight.src = url;
         mangaPageRight.classList.remove('hidden');
         mangaPageRight.style.display = '';
-        pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page}`;
-        
+        pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page} / ${totalPages}`;
+
+        if (state.page === totalPages) {
+          isEndOfChapter = true;
+        }
+
         loadImagePromise(url).then(() => {
-           isLoading = false;
-           prevBtn.disabled = state.page === 1;
-           nextBtn.disabled = false;
-           preloadAhead();
+          isLoading = false;
+          prevBtn.disabled = state.page === 1;
+          nextBtn.disabled = false;
+          preloadAhead();
         }).catch(handleImageError);
       } else {
         handleImageError();
@@ -1062,62 +1094,74 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handleImageError() {
-    if (state.useMangaDex && state.currentMangaId) {
-      console.warn("MangaDex chapter loading failed, falling back to WeebCentral Proxy!");
-      state.useMangaDex = false;
-      loadPage();
-      return;
-    }
-    
-    if (state.page > 1) {
-      handleEndOfChapter();
-    } else {
-      mangaPageLeft.classList.add('hidden');
-      mangaPageRight.classList.add('hidden');
-      const errorOverlay = document.getElementById('errorOverlay');
-      if (errorOverlay) {
-        errorOverlay.innerHTML = `<h3>CHAPTER UNAVAILABLE</h3><p style="font-size: 1rem; color: #ccc; margin-top: 1rem; font-family: Inter, sans-serif; font-weight: normal;">This chapter cannot be loaded because MangaDex does not host the images directly (they redirect to official publishers like MangaPlus). Please read this chapter on the official source.</p>`;
-        errorOverlay.style.display = 'block';
-      }
-      pageInfo.textContent = "Error";
-    }
-  }
-
-  function handleEndOfChapter() {
-    if (state.page > 1) {
-      state.page -= state.isSpread ? 2 : 1;
-      if (state.page < 1) state.page = 1;
-      pageInfo.textContent = `Ch ${state.chapter} | Pg ${state.page} (End)`;
-      isEndOfChapter = true;
-    }
+    isLoading = false;
+    prevBtn.disabled = state.page === 1;
+    nextBtn.disabled = false;
+    showToast("Error loading page image. Try reloading or turning the page.");
   }
 
   function goNext() {
-    if (!isLoading) {
-      if (isEndOfChapter) {
-        if (state.chapter < (state.maxChapter || MAX_CHAPTER)) {
-          if (confirm("this chapter is over, do you want to move to a next chapter?")) {
-            state.chapter++;
-            chapterSelect.value = state.chapter;
-            state.page = 1;
-            loadPage();
-          }
-        } else {
-          showToast("You have reached the latest chapter.");
-        }
-        return;
-      }
-      state.page += state.isSpread ? 2 : 1;
+    if (isLoading) return;
+    const totalPages = state.currentChapterPages ? state.currentChapterPages.length : 1;
+    const step = state.isSpread ? 2 : 1;
+
+    if (state.page + step <= totalPages) {
+      state.page += step;
       loadPage('next');
+    } else {
+      // Reached the end of chapter!
+      if (confirm(`You have finished Chapter ${state.chapter}. Move to the next chapter?`)) {
+        goToNextChapter();
+      }
     }
   }
 
   function goPrev() {
-    if (state.page > 1 && !isLoading) {
-      state.page -= state.isSpread ? 2 : 1;
+    if (isLoading) return;
+    const step = state.isSpread ? 2 : 1;
+    if (state.page > 1) {
+      state.page -= step;
       if (state.page < 1) state.page = 1;
       loadPage('prev');
+    } else {
+      // At beginning of chapter
+      if (state.chapter > 1) {
+        if (confirm(`Go back to Chapter ${state.chapter - 1}?`)) {
+          goToPrevChapter();
+        }
+      }
     }
+  }
+
+  function goToNextChapter() {
+    let nextCh = state.chapter + 1;
+    if (state.availableChapters && state.availableChapters.length > 0) {
+      const idx = state.availableChapters.findIndex(c => c.number === state.chapter);
+      if (idx !== -1 && idx + 1 < state.availableChapters.length) {
+        nextCh = state.availableChapters[idx + 1].number;
+      }
+    }
+    state.chapter = nextCh;
+    chapterSelect.value = state.chapter;
+    state.page = 1;
+    state.currentChapterPages = null;
+    loadPage();
+  }
+
+  function goToPrevChapter() {
+    let prevCh = state.chapter - 1;
+    if (state.availableChapters && state.availableChapters.length > 0) {
+      const idx = state.availableChapters.findIndex(c => c.number === state.chapter);
+      if (idx > 0) {
+        prevCh = state.availableChapters[idx - 1].number;
+      }
+    }
+    if (prevCh < 1) prevCh = 1;
+    state.chapter = prevCh;
+    chapterSelect.value = state.chapter;
+    state.page = 1;
+    state.currentChapterPages = null;
+    loadPage();
   }
 
   nextBtn.addEventListener('click', () => goNext());
@@ -1166,9 +1210,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function createMangaCard(manga) {
     const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown';
-    const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes('spy x family') || lowerTitle.includes('attack on titan') || lowerTitle.includes('solo level')) return null;
-
     const coverArt = manga.relationships ? manga.relationships.find(r => r.type === 'cover_art') : null;
     const fileName = coverArt ? coverArt.attributes.fileName : '';
     const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';

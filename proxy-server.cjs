@@ -23,130 +23,184 @@ const HEADERS = {
   'Upgrade-Insecure-Requests': '1'
 };
 
+const seriesCache = {};
+const chapterListCache = {};
+const chapterPagesCache = {};
+
+const aliasMap = {
+  'attack on titan': 'Shingeki no Kyojin',
+  'shingeki no kyojin': 'Shingeki no Kyojin',
+  'my hero academia': 'Boku no Hero Academia',
+  'boku no hero academia': 'Boku no Hero Academia',
+  'tokyo ghoul': 'Toukyou Ghoul',
+  'toukyou ghoul': 'Tokyo Ghoul',
+  'demon slayer': 'Kimetsu no Yaiba',
+  'kimetsu no yaiba': 'Kimetsu no Yaiba',
+  'black clover': 'Black Clover',
+  'chainsaw man': 'Chainsaw Man',
+  'solo leveling': 'Solo Leveling',
+  'jujutsu kaisen': 'Jujutsu Kaisen',
+  'blue lock': 'Blue Lock',
+  'one piece': 'One Piece',
+  'naruto': 'Naruto',
+  'bleach': 'Bleach',
+  'dragon ball': 'Dragon Ball',
+  'death note': 'Death Note',
+  'berserk': 'Berserk',
+  'hunter x hunter': 'Hunter x Hunter',
+  'vinland saga': 'Vinland Saga',
+  'haikyuu!!': 'Haikyuu!!',
+  'sakamoto days': 'Sakamoto Days',
+  'oshi no ko': 'Oshi no Ko',
+  'spy x family': 'Spy x Family'
+};
+
+async function getSeriesId(rawTitle) {
+  let title = rawTitle.replace(/\(.*\)/g, '').trim();
+  const lower = title.toLowerCase();
+  const searchTitle = aliasMap[lower] || title;
+  
+  if (seriesCache[searchTitle.toLowerCase()]) {
+    return seriesCache[searchTitle.toLowerCase()];
+  }
+
+  const searchRes = await axios.get(`https://weebcentral.com/search/data?text=${encodeURIComponent(searchTitle)}`, { headers: HEADERS });
+  const searchHtml = searchRes.data;
+  
+  const parts = searchHtml.split('href="');
+  let seriesId = null;
+  let fallbackId = null;
+  
+  for (const part of parts) {
+    const match = part.match(/^([^"]*\/series\/([A-Z0-9]+)\/[^"]*)"/i);
+    if (match) {
+      const id = match[2];
+      if (!fallbackId) fallbackId = id;
+      
+      const blockContent = part.split('</a>')[0] || part;
+      const textContent = blockContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+      
+      if (textContent.includes(searchTitle.toLowerCase())) {
+        const regex = new RegExp(`(?:^|\\s)${searchTitle.toLowerCase().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(?:\\s|$)`, 'i');
+        if (regex.test(textContent)) {
+          seriesId = id;
+          break;
+        }
+      }
+    }
+  }
+  
+  if (!seriesId) seriesId = fallbackId;
+  if (seriesId) {
+    seriesCache[searchTitle.toLowerCase()] = seriesId;
+    seriesCache[lower] = seriesId;
+  }
+  return seriesId;
+}
+
+async function getChapterList(seriesId) {
+  if (chapterListCache[seriesId]) {
+    return chapterListCache[seriesId];
+  }
+
+  const chaptersRes = await axios.get(`https://weebcentral.com/series/${seriesId}/full-chapter-list`, { headers: HEADERS });
+  const chaptersHtml = chaptersRes.data;
+  
+  const blocks = chaptersHtml.split('<a href="');
+  const chapters = [];
+  
+  for (const block of blocks) {
+    if (block.includes('/chapters/')) {
+      const match = block.match(/.*\/chapters\/([A-Z0-9]+)/i);
+      const text = block.split('</a>')[0].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (match) {
+        const numMatch = text.match(/(?:Chapter|Punch|Episode|Ch\.?)\s*([0-9]+(?:\.[0-9]+)?)/i);
+        const number = numMatch ? parseFloat(numMatch[1]) : null;
+        chapters.push({
+          id: match[1],
+          text: numMatch ? `Chapter ${numMatch[1]}` : (text.slice(0, 30) || 'Chapter'),
+          number: number
+        });
+      }
+    }
+  }
+  
+  chapters.sort((a, b) => {
+    if (a.number !== null && b.number !== null) return a.number - b.number;
+    return 0;
+  });
+
+  if (chapters.length > 0) {
+    chapterListCache[seriesId] = chapters;
+  }
+  return chapters;
+}
+
+// Endpoint to get ALL chapters for a manga
+app.get('/api/proxy-chapters', async (req, res) => {
+  try {
+    let { title } = req.query;
+    if (!title) return res.status(400).json({ error: 'Title required' });
+
+    const seriesId = await getSeriesId(title);
+    if (!seriesId) return res.status(404).json({ error: 'Series not found on WeebCentral' });
+
+    const chapters = await getChapterList(seriesId);
+    if (!chapters || chapters.length === 0) return res.status(404).json({ error: 'No chapters found' });
+
+    const minChapter = chapters[0]?.number ?? 1;
+    const maxChapter = chapters[chapters.length - 1]?.number ?? chapters.length;
+
+    res.json({
+      success: true,
+      seriesId,
+      total: chapters.length,
+      minChapter,
+      maxChapter,
+      chapters
+    });
+  } catch (err) {
+    console.error('proxy-chapters error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint to fetch real manga chapter pages
 app.get('/api/proxy-manga', async (req, res) => {
   try {
     let { title, chapter } = req.query;
     if (!title || !chapter) return res.status(400).json({ error: 'Title and chapter required' });
-    
-    // Clean title for search
-    title = title.replace(/\(.*\)/g, '').trim();
 
-    console.log(`[Proxy] Searching for: ${title} Ch ${chapter}`);
-
-    // If the manga is Blue Lock, bypass WeebCentral entirely and scrape blmangafree.com
-    if (title.toLowerCase() === 'blue lock') {
-      console.log('[Proxy] Using blmangafree bypass for Blue Lock');
-      try {
-        const blUrl = `https://ww3.blmangafree.com/en/blue-lock-en-chapter-${chapter}`;
-        const blRes = await axios.get(blUrl);
-        const html = blRes.data;
-        const blocks = html.split('src="');
-        const pages = blocks
-          .map(b => b.split('"')[0])
-          .filter(u => u.includes('image') || u.includes('.webp') || u.includes('.jpg') || u.includes('.png'));
-
-        if (pages.length > 0) {
-          return res.json({ pages });
-        }
-      } catch (err) {
-        console.error('[Proxy] blmangafree failed, falling back...', err.message);
-      }
-    }
-    
-    // Alias mapping for WeebCentral
-    const aliasMap = {
-      'Attack on Titan': 'Shingeki no Kyojin',
-      'My Hero Academia': 'Boku no Hero Academia',
-      'Boku no Hero Academia': 'My Hero Academia',
-      'Sakamoto Days': 'Sakamoto Days',
-      'Tokyo Ghoul': 'Toukyou Ghoul',
-      'Toukyou Ghoul': 'Tokyo Ghoul',
-      'Black Clover': 'Black Clover'
-    };
-    if (aliasMap[title]) title = aliasMap[title];
-
-    // 1. Search for series ID
-    const searchRes = await axios.get(`https://weebcentral.com/search/data?text=${encodeURIComponent(title)}`, { headers: HEADERS });
-    const searchHtml = searchRes.data;
-    
-    // Split by <a href=".../series/ID/Title">
-    const parts = searchHtml.split('href="');
-    let seriesId = null;
-    let fallbackId = null;
-    
-    for (const part of parts) {
-       const match = part.match(/^([^"]*\/series\/([A-Z0-9]+)\/[^"]*)"/i);
-       if (match) {
-          const url = match[1];
-          const id = match[2];
-          if (!fallbackId) fallbackId = id; // Store first found as fallback
-          
-          // Check the text inside this block for the exact title
-          const blockContent = part.split('</a>')[0] || part;
-          const textContent = blockContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-          
-          if (textContent.includes(title.toLowerCase())) {
-             // If we find an exact match (e.g. "Jujutsu Kaisen" without the "0")
-             // It's a bit tricky because textContent might be "Jujutsu Kaisen jujutsu kaisen"
-             // But if we do a regex to find exactly the title wrapped in spaces or end of string
-             const regex = new RegExp(`(?:^|\\s)${title.toLowerCase().replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(?:\\s|$)`, 'i');
-             if (regex.test(textContent)) {
-                seriesId = id;
-                break;
-             }
-          }
-       }
-    }
-    
-    if (!seriesId) seriesId = fallbackId;
+    console.log(`[Proxy] Fetching: ${title} Ch ${chapter}`);
+    const seriesId = await getSeriesId(title);
     if (!seriesId) return res.status(404).json({ error: 'Series not found on WeebCentral' });
-    const chaptersRes = await axios.get(`https://weebcentral.com/series/${seriesId}/full-chapter-list`, { headers: HEADERS });
-    const chaptersHtml = chaptersRes.data;
-    
-    // Find the link for the specific chapter
-    const blocks = chaptersHtml.split('<a href="');
-    let chapterId = null;
-    
-    // Look for exact chapter match, ignoring leading zeros and supporting prefixes like "Punch"
-    const escapedChapter = chapter.replace('.', '\\.');
-    // Matches "> Chapter 1", "> Punch 1", "> Ch. 1", or just "> 1"
-    const chRegex = new RegExp(`>\\s*(?:[A-Za-z]+\\s*\\.?\\s*)?0*${escapedChapter}\\b`, 'i');
-    
-    for (const block of blocks) {
-      if (block.includes('/chapters/')) {
-        // Extract all text inside the block to check against
-        const textOnly = block.replace(/<[^>]+>/g, ' ').trim();
-        
-        // WeebCentral puts the chapter name in a span. Let's see if the text matches our chapter number.
-        // We use a robust regex that checks for the number preceded by optional words like "Chapter", "Punch", etc.
-        // And we ensure it's preceded by a word boundary or start of string so we don't match the "1" in "271"
-        // Ensure we only match the ACTUAL chapter number part, not dates like "1 day ago".
-        // The text typically looks like: "Chapter 1 2024-01-01" or "Chapter 1"
-        // We can restrict the match to the start of the string or immediately following "Chapter".
-        const robustRegex = new RegExp(`^\\s*(?:Chapter|Punch|Episode|Ch\\.?)\\s*0*${escapedChapter}\\b`, 'i');
-        const fallbackRegex = new RegExp(`^\\s*0*${escapedChapter}\\b`, 'i');
-        
-        if (robustRegex.test(textOnly) || fallbackRegex.test(textOnly)) {
-          const match = block.match(/.*\/chapters\/([A-Z0-9]+)/i);
-          if (match) {
-            chapterId = match[1];
-            break; // Found it!
-          }
-        }
-      }
+
+    const chapters = await getChapterList(seriesId);
+    if (!chapters || chapters.length === 0) return res.status(404).json({ error: 'No chapters found' });
+
+    const targetNum = parseFloat(chapter);
+    let chapterObj = chapters.find(c => c.number === targetNum);
+    if (!chapterObj) {
+      chapterObj = chapters.find(c => String(c.number) === String(chapter));
     }
-    
-    if (!chapterId) {
-      return res.status(404).json({ error: 'Chapter not found' });
+    if (!chapterObj) {
+      const escaped = String(chapter).replace('.', '\\.');
+      const regex = new RegExp(`(?:Chapter|Ch\\.?|Punch|Episode)\\s*0*${escaped}\\b`, 'i');
+      chapterObj = chapters.find(c => regex.test(c.text));
     }
-    
-    console.log(`[Proxy] Found chapter ID: ${chapterId}`);
-    
-    // 3. Fetch image list
+
+    if (!chapterObj) {
+      return res.status(404).json({ error: `Chapter ${chapter} not found` });
+    }
+
+    const chapterId = chapterObj.id;
+    if (chapterPagesCache[chapterId]) {
+      return res.json({ pages: chapterPagesCache[chapterId], total: chapterPagesCache[chapterId].length });
+    }
+
     const imagesRes = await axios.get(`https://weebcentral.com/chapters/${chapterId}/images?is_prev=False&current_page=1&reading_style=long_strip`, { headers: HEADERS });
     const imagesHtml = imagesRes.data;
-    
-    // Parse all image URLs
+
     const imgRegex = /<img[^>]*src="([^"]+)"[^>]*>/g;
     const pages = [];
     let match;
@@ -155,13 +209,13 @@ app.get('/api/proxy-manga', async (req, res) => {
         pages.push(match[1]);
       }
     }
-    
+
     if (pages.length === 0) return res.status(404).json({ error: 'No images found for this chapter' });
-    
-    res.json({ pages });
-    
+
+    chapterPagesCache[chapterId] = pages;
+    res.json({ pages, total: pages.length });
   } catch (err) {
-    console.error(err.message);
+    console.error('proxy-manga error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -182,9 +236,8 @@ app.get('/api/proxy-image', async (req, res) => {
       }
     });
     
-    // Copy the content-type from the image response
     res.set('Content-Type', response.headers['content-type']);
-    res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    res.set('Cache-Control', 'public, max-age=31536000');
     response.data.pipe(res);
   } catch (err) {
     console.error("Image Proxy Error:", err.message);
@@ -198,7 +251,6 @@ app.get('/api/proxy-mangadex', async (req, res) => {
     const targetUrl = req.query.url;
     if (!targetUrl) return res.status(400).json({ error: 'No URL provided' });
     
-    // Ensure they are only proxying to api.mangadex.org for safety
     if (!targetUrl.startsWith('https://api.mangadex.org/')) {
        return res.status(403).json({ error: 'Forbidden target URL' });
     }
@@ -218,7 +270,7 @@ app.get('/api/proxy-mangadex', async (req, res) => {
   }
 });
 
-// SPA Fallback (using app.use for Express 5 compatibility instead of app.get('*'))
+// SPA Fallback
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
