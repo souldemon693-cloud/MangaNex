@@ -290,33 +290,12 @@ document.addEventListener('DOMContentLoaded', () => {
       
       let allData = [];
       
-      const blockedIds = [
-        "304ceac3-8cdb-4fe7-acf7-2b6ff7a60613", // Attack on Titan
-        "4f3bcae4-2d96-4c9d-932c-90181d9c873e", // My Hero Academia
-        "789642f8-ca89-4e4e-8f7b-eee4d17ea08b", // Demon Slayer
-        "c52b2ce3-7f95-469c-96b0-479524fb7a1a", // Jujutsu Kaisen
-        "db692d58-4b13-4174-ae8c-30c515c0689c", // Hunter x Hunter
-        "a77742b1-befd-49a4-bff5-1ad4e6b0ef7b", // Chainsaw Man
-        "6a1d1cb1-ecd5-40d9-89ff-9d88e40b136b", // Tokyo Ghoul
-        "e7eabe96-aa17-476f-b431-2497d5e9d060", // Black Clover
-        "71763dfb-8b85-4a74-92df-dfe46478fc5d", // Kaiju No 8
-        "6b958848-c885-4735-9201-12ee77abcb3c", // SPY x FAMILY
-        "d8a959f7-648e-4c8d-8f23-f1f3f8e129f3", // One-Punch Man
-        "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0"  // Solo Leveling
-      ];
-
       data1.data.forEach(manga => {
-         const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown';
-         const lowerTitle = title.toLowerCase();
-         if (!blockedIds.includes(manga.id) && !lowerTitle.includes('solo level') && !lowerTitle.includes('attack on titan') && !lowerTitle.includes('spy x family')) {
-            allData.push(manga);
-         }
+         allData.push(manga);
       });
       
       data2.data.forEach(manga => {
-         const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown';
-         const lowerTitle = title.toLowerCase();
-         if (!blockedIds.includes(manga.id) && !allData.find(m => m.id === manga.id) && !lowerTitle.includes('solo level') && !lowerTitle.includes('attack on titan') && !lowerTitle.includes('spy x family')) {
+         if (!allData.find(m => m.id === manga.id)) {
             allData.push(manga);
          }
       });
@@ -884,11 +863,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function getCleanTitle(title) {
+    if (!title) return '';
+    return title
+      .replace(/\s*\(colored\)/i, '')
+      .replace(/\s*\(official\)/i, '')
+      .replace(/\s*\(native\)/i, '')
+      .replace(/\s*\(webtoon\)/i, '')
+      .replace(/\s*\(digital\)/i, '')
+      .trim();
+  }
+
   async function loadChaptersForCurrentManga() {
     if (!state.currentMangaTitle) return;
     try {
       const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
-      const res = await fetch(`${baseUrl}/api/proxy-chapters?title=${encodeURIComponent(state.currentMangaTitle)}`);
+      const searchTitle = getCleanTitle(state.currentMangaTitle);
+      const res = await fetch(`${baseUrl}/api/proxy-chapters?title=${encodeURIComponent(searchTitle)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.chapters && data.chapters.length > 0) {
@@ -938,12 +929,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Try local proxy scraper (WeebCentral) first - contains 100% full scans for all chapters!
     try {
-      console.log(`[Reader] Fetching Chapter ${chapterNumber} of "${state.currentMangaTitle}" via proxy...`);
-      const res = await fetch(`${baseUrl}/api/proxy-manga?title=${encodeURIComponent(state.currentMangaTitle)}&chapter=${chapterNumber}`);
+      const searchTitle = getCleanTitle(state.currentMangaTitle);
+      console.log(`[Reader] Fetching Chapter ${chapterNumber} of "${searchTitle}" via proxy...`);
+      const res = await fetch(`${baseUrl}/api/proxy-manga?title=${encodeURIComponent(searchTitle)}&chapter=${chapterNumber}`);
       if (res.ok) {
         const data = await res.json();
         if (data.pages && data.pages.length > 0) {
-          state.currentChapterPages = data.pages;
+          state.currentChapterPages = data.pages.map(p => {
+            if (p.startsWith('/api/') && baseUrl) {
+              return `${baseUrl}${p}`;
+            }
+            if (p.startsWith('http') && !p.includes('/api/proxy-image')) {
+              return `${baseUrl}/api/proxy-image?url=${encodeURIComponent(p)}`;
+            }
+            return p;
+          });
           console.log(`[Reader] Successfully loaded ${data.pages.length} pages from proxy!`);
           return true;
         }

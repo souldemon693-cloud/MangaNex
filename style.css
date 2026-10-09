@@ -63,8 +63,7 @@ body {
 .manga-viewer {
   position: relative;
   z-index: 10;
-  backdrop-filter: blur(12px);
-  background-color: rgba(255, 250, 240, 0.75); /* Warm translucent */
+  background: radial-gradient(circle at center, #181a20 0%, #0c0d11 100%);
   min-height: 100vh;
 }
 .hex-row:nth-child(even) {
@@ -406,8 +405,9 @@ body {
   width: auto;
   display: block;
   object-fit: contain;
-  box-shadow: 0 0 30px rgba(0,0,0,0.8);
-  background-color: var(--panel-bg); /* Prevents transparent artifacts */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+  background-color: #0c0d11; /* Clean dark background */
+  border-radius: 4px;
 }
 
 .manga-page.spread { max-width: 50%; }
@@ -423,9 +423,9 @@ body {
 }
 
 .nav-btn {
-  background-color: rgba(255, 140, 0, 0.15);
+  background-color: rgba(255, 140, 0, 0.2);
   color: #fff;
-  border: 1px solid rgba(255, 140, 0, 0.4);
+  border: 1px solid rgba(255, 140, 0, 0.5);
   backdrop-filter: blur(5px);
   padding: 0.75rem 2rem;
   border-radius: 4px;
@@ -435,10 +435,10 @@ body {
   cursor: pointer;
   transition: var(--transition);
 }
-.nav-btn:hover:not(:disabled) { background-color: rgba(255, 140, 0, 0.3); border-color: rgba(255, 140, 0, 0.8); transform: translateY(-2px); }
+.nav-btn:hover:not(:disabled) { background-color: rgba(255, 140, 0, 0.4); border-color: rgba(255, 140, 0, 0.9); transform: translateY(-2px); }
 .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.page-info { font-weight: 600; color: var(--text-muted); font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
+.page-info { font-weight: 600; color: #f5f5f5; font-family: 'Oswald', sans-serif; letter-spacing: 1px; font-size: 1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
 /* Fullscreen Mode */
 body.fullscreen-mode .top-nav,

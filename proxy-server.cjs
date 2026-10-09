@@ -52,6 +52,7 @@ const seriesCache = {
   "chainsaw man": "01J76XYCRVY3QGYAMRR3STW941",
   "demon slayer": "01J76XYBPP2A7D38XGF4PSQVPD",
   "kimetsu no yaiba": "01J76XYBPP2A7D38XGF4PSQVPD",
+  "demon slayer: kimetsu no yaiba": "01J76XYBPP2A7D38XGF4PSQVPD",
   "my hero academia": "01J76XYAE4S59RVPJETN0MFRX5",
   "boku no hero academia": "01J76XYAE4S59RVPJETN0MFRX5",
   "berserk": "01J76XY7EF75DJNQCV04HTPDZK",
@@ -62,23 +63,47 @@ const seriesCache = {
   "vinland saga": "01J76XY7FQY59WRK2YWX5T4E5N",
   "sakamoto days": "01J76XYE3130E1W5HKTJ7VD912",
   "one-punch man": "01J76XY7KT7J224EBK6J816Y1Q",
-  "haikyuu!!": "01J76XY868R0R68Z6605Y50N5W",
-  "tokyo ghoul": "01J76XY7EH974P6P8Q1V8K827Q",
-  "toukyou ghoul": "01J76XY7EH974P6P8Q1V8K827Q"
+  "one punch man": "01J76XY7KT7J224EBK6J816Y1Q",
+  "haikyuu!!": "01J76XY7RZNH4C0J1VVZ6VRAGK",
+  "haikyu!!": "01J76XY7RZNH4C0J1VVZ6VRAGK",
+  "haikyuu": "01J76XY7RZNH4C0J1VVZ6VRAGK",
+  "tokyo ghoul": "01J76XY9E3JSAWKXW3Q36SQ7C6",
+  "toukyou ghoul": "01J76XY9E3JSAWKXW3Q36SQ7C6",
+  "fullmetal alchemist": "01J76XY7G0WYV1216AF67J3382",
+  "dandadan": "01J76XYEMWA55C7XTZHP1HNARM",
+  "kaiju no. 8": "01J76XYDNXNEJ72V8B63390CNT",
+  "kaiju no 8": "01J76XYDNXNEJ72V8B63390CNT",
+  "fairy tail": "01J76XY7E5E1C5Y9J0M2FCVQ8H",
+  "vagabond": "01J76XY7J8BMXD4D0FM50MJHQG",
+  "monster": "01J76XY7K1FMHJ3Y2WD9Z9S6QX",
+  "spy x family": "01J76XYCYJ0P680SKX3QZ0NQD7",
+  "spyxfamily": "01J76XYCYJ0P680SKX3QZ0NQD7",
+  "oshi no ko": "01J76XYDJ8EJGFDMR878PJM89D",
+  "gintama": "01J76XY7HDDT4A07FFWX8B96AX",
+  "slam dunk": "01J76XY7GN9SV2VK3RTTCYQBEX",
+  "mob psycho 100": "01J76XY9WY1HW989FW5G9ZYE9G",
+  "jojo": "01J76XY8NHVJYQJ3VJB51PAQ7B",
+  "jojo's bizarre adventure": "01J76XY8NHVJYQJ3VJB51PAQ7B",
+  "dorohedoro": "01J76XY7WMZ8SSQQ38YSXJY055",
+  "claymore": "01J76XY7EH7SNNTHJD1CCTJZS7",
+  "pluto": "01J76XY8K9Q6Z6NHQ5YC7RBZ8J",
+  "parasyte": "01J76XY8G2EJ2R67VW18406VQY",
+  "akira": "01J76XY8CF6MA6W5VJWZDNWESZ"
 };
 
 const chapterListCache = {};
 const chapterPagesCache = {};
 
 const aliasMap = {
-  'attack on titan': 'Shingeki no Kyojin',
+  'attack on titan': 'Attack on Titan',
   'shingeki no kyojin': 'Shingeki no Kyojin',
   'my hero academia': 'Boku no Hero Academia',
   'boku no hero academia': 'Boku no Hero Academia',
-  'tokyo ghoul': 'Toukyou Ghoul',
+  'tokyo ghoul': 'Tokyo Ghoul',
   'toukyou ghoul': 'Tokyo Ghoul',
   'demon slayer': 'Kimetsu no Yaiba',
   'kimetsu no yaiba': 'Kimetsu no Yaiba',
+  'demon slayer: kimetsu no yaiba': 'Kimetsu no Yaiba',
   'black clover': 'Black Clover',
   'chainsaw man': 'Chainsaw Man',
   'solo leveling': 'Solo Leveling',
@@ -91,17 +116,34 @@ const aliasMap = {
   'death note': 'Death Note',
   'berserk': 'Berserk',
   'hunter x hunter': 'Hunter x Hunter',
+  'hunter × hunter': 'Hunter x Hunter',
   'vinland saga': 'Vinland Saga',
-  'haikyuu!!': 'Haikyuu!!',
+  'haikyuu!!': 'Haikyu!!',
+  'haikyu!!': 'Haikyu!!',
+  'haikyuu': 'Haikyu!!',
   'sakamoto days': 'Sakamoto Days',
   'oshi no ko': 'Oshi no Ko',
   'spy x family': 'Spy x Family',
-  'one-punch man': 'One-Punch Man'
+  'spy×family': 'Spy x Family',
+  'one-punch man': 'One-Punch Man',
+  'one punch man': 'One-Punch Man',
+  'fullmetal alchemist': 'Fullmetal Alchemist',
+  'dandadan': 'Dandadan',
+  'kaiju no. 8': 'Kaiju No. 8',
+  'kaiju no 8': 'Kaiju No. 8',
+  'fairy tail': 'Fairy Tail',
+  'vagabond': 'Vagabond',
+  'monster': 'Monster',
+  'gintama': 'Gintama',
+  'slam dunk': 'Slam Dunk',
+  'mob psycho 100': 'Mob Psycho 100',
+  'jojo': "JoJo's Bizarre Adventure",
+  "jojo's bizarre adventure": "JoJo's Bizarre Adventure"
 };
 
 async function getSeriesId(rawTitle) {
-  let title = rawTitle.replace(/\(.*\)/g, '').trim();
-  const lower = title.toLowerCase();
+  let title = rawTitle.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').replace(/（.*?）/g, '').trim();
+  const lower = title.toLowerCase().replace(/×/g, 'x').replace(/\s+/g, ' ').trim();
   const searchTitle = aliasMap[lower] || title;
   
   if (seriesCache[lower]) return seriesCache[lower];
@@ -248,8 +290,10 @@ app.get('/api/proxy-manga', async (req, res) => {
     const pages = [];
     let match;
     while ((match = imgRegex.exec(imagesHtml)) !== null) {
-      if (!match[1].includes('brand.png') && !match[1].includes('broken_image.jpg')) {
-        pages.push(match[1]);
+      const src = match[1];
+      if (!src.includes('brand.png') && !src.includes('broken_image.jpg')) {
+        // Return proxied image URLs so browsers never get 403 Forbidden hotlink blocks!
+        pages.push(`/api/proxy-image?url=${encodeURIComponent(src)}`);
       }
     }
 
@@ -266,21 +310,33 @@ app.get('/api/proxy-manga', async (req, res) => {
 // Proxy for MangaDex Cover Images or external CDN images
 app.get('/api/proxy-image', async (req, res) => {
   try {
-    const imageUrl = req.query.url;
+    let imageUrl = req.query.url;
     if (!imageUrl) return res.status(400).send('No URL provided');
+
+    // Handle double-encoded URLs safely
+    try {
+      if (imageUrl.includes('%3A%2F%2F') || imageUrl.includes('%2F')) {
+        imageUrl = decodeURIComponent(imageUrl);
+      }
+    } catch (e) {}
     
-    const referer = imageUrl.includes('mangadex.org') ? 'https://mangadex.org/' : 'https://weebcentral.com/';
+    const referer = (imageUrl.includes('mangadex.org') || imageUrl.includes('uploads.mangadex.org')) 
+      ? 'https://mangadex.org/' 
+      : 'https://weebcentral.com/';
+
     const response = await axios({
       method: 'get',
       url: imageUrl,
       responseType: 'stream',
       headers: {
         'Referer': referer,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+      },
+      timeout: 15000
     });
     
-    res.set('Content-Type', response.headers['content-type']);
+    res.set('Content-Type', response.headers['content-type'] || 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=31536000');
     response.data.pipe(res);
   } catch (err) {
