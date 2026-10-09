@@ -539,7 +539,7 @@ body.fullscreen-mode .manga-page {
 .player-sprite {
   width: 100%;
   height: 350px;
-  background-image: url('/players.jpg');
+  background-image: url('players.jpg');
   background-size: 600% 600%;
   background-repeat: no-repeat;
   border-bottom: 2px solid var(--accent-color);
@@ -616,7 +616,7 @@ body.fullscreen-mode .manga-page {
   flex: 1;
   min-width: 300px;
   min-height: 400px;
-  background-image: url('/players.jpg');
+  background-image: url('players.jpg');
   background-size: 600% 600%;
   background-repeat: no-repeat;
 }

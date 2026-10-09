@@ -172,6 +172,37 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateToReader();
   };
 
+  // ---- Universal MangaDex API Fetcher (Works on localhost, Render, and GitHub Pages) ----
+  async function fetchMangaDex(url) {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocal) {
+      try {
+        const proxyRes = await fetch(`/api/proxy-mangadex?url=${encodeURIComponent(url)}`);
+        if (proxyRes.ok && proxyRes.headers.get('content-type')?.includes('application/json')) {
+          return await proxyRes.json();
+        }
+      } catch (e) {}
+    }
+    // Direct MangaDex API call (fully CORS enabled in all modern browsers)
+    try {
+      const directRes = await fetch(url);
+      if (directRes.ok && directRes.headers.get('content-type')?.includes('application/json')) {
+        return await directRes.json();
+      }
+    } catch (e) {
+      console.warn("Direct MangaDex fetch attempt failed:", e);
+    }
+    if (!isLocal) {
+      try {
+        const proxyRes = await fetch(`/api/proxy-mangadex?url=${encodeURIComponent(url)}`);
+        if (proxyRes.ok && proxyRes.headers.get('content-type')?.includes('application/json')) {
+          return await proxyRes.json();
+        }
+      } catch (e) {}
+    }
+    throw new Error(`MangaDex fetch failed for: ${url}`);
+  }
+
   // ---- Dynamic Homepage Content ----
   async function fetchTrendingMangas() {
     const grid = document.getElementById('mangaGrid');
@@ -231,8 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
       const famousIds = [...shonenIds, ...seinenIds, ...sportsIds];
       
-      // Explicit Ranking requested by user (Max 40 for the API limit)
-      // Added fully native/colored editions of famous mangas that don't trigger proxy errors!
       const rankedIds = [
         "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", // Solo Leveling
         "4141c5dc-c525-4df5-afd7-cc7d192a832f", // Blue Lock (Native)
@@ -248,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         "db692d58-4b13-4174-ae8c-30c515c0689c", // Hunter x Hunter (Native)
         "801513ba-a712-498c-8f57-cae55b38cc92", // Berserk (Native)
       ];
-      const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('%26');
+      const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('&');
       
       // Check cache first to avoid blank screen on rate limits
       const cachedData = localStorage.getItem('manganex_cache');
@@ -256,13 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let data2 = { data: [] };
       
       try {
-        const res1 = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?limit=40%26includes[]=cover_art%26${idsQuery}`);
-        if (!res1.ok) throw new Error('API Rate Limit or Error');
-        data1 = await res1.json();
-        
-        const res2 = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?limit=100%26includes[]=cover_art%26order[followedCount]=desc%26contentRating[]=safe%26contentRating[]=suggestive`);
-        if (!res2.ok) throw new Error('API Rate Limit or Error');
-        data2 = await res2.json();
+        data1 = await fetchMangaDex(`https://api.mangadex.org/manga?limit=40&includes[]=cover_art&${idsQuery}`);
+        data2 = await fetchMangaDex(`https://api.mangadex.org/manga?limit=100&includes[]=cover_art&order[followedCount]=desc&contentRating[]=safe&contentRating[]=suggestive`);
       } catch (err) {
         console.warn("MangaDex API fetch failed, falling back to cache or hardcoded data:", err);
         if (cachedData) {
@@ -335,10 +359,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Grab 10 mangas instead of 5
         const top10 = (mangas || []).slice(0, 10);
         top10.forEach(manga => {
-           const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
-           const coverArt = manga.relationships.find(r => r.type === 'cover_art');
-           const fileName = coverArt ? coverArt.attributes.fileName : '';
-           const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.512.jpg` : 'placeholder.jpg';
+           const title = (manga.attributes && manga.attributes.title) ? (manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown') : 'Unknown';
+           const coverArt = manga.relationships ? manga.relationships.find(r => r.type === 'cover_art') : null;
+           const fileName = coverArt && coverArt.attributes ? coverArt.attributes.fileName : '';
+           const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.512.jpg` : 'logo.jpg';
            
            const slide = document.createElement('div');
            slide.className = 'promo-slide';
@@ -397,10 +421,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const sortedHottest = [...allData].slice(0, 50);
         
         sortedHottest.forEach((manga, index) => {
-           const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0];
-           const coverArt = manga.relationships.find(r => r.type === 'cover_art');
-           const fileName = coverArt ? coverArt.attributes.fileName : '';
-           const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';
+           const title = (manga.attributes && manga.attributes.title) ? (manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown') : 'Unknown';
+           const coverArt = manga.relationships ? manga.relationships.find(r => r.type === 'cover_art') : null;
+           const fileName = coverArt && coverArt.attributes ? coverArt.attributes.fileName : '';
+           const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'logo.jpg';
            
            const views = Math.floor(Math.random() * 300000 + 50000).toLocaleString();
            
@@ -455,9 +479,9 @@ document.addEventListener('DOMContentLoaded', () => {
            if (enAlt) title = enAlt.en;
         }
         
-        const coverRel = manga.relationships.find(r => r.type === 'cover_art');
-        const coverFile = coverRel ? coverRel.attributes.fileName : '';
-        const coverUrl = coverFile ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` : '';
+        const coverRel = manga.relationships ? manga.relationships.find(r => r.type === 'cover_art') : null;
+        const coverFile = coverRel && coverRel.attributes ? coverRel.attributes.fileName : '';
+        const coverUrl = coverFile ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFile}.256.jpg` : 'logo.jpg';
         
         // Build card
         const card = document.createElement('div');
@@ -876,28 +900,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadChaptersForCurrentManga() {
     if (!state.currentMangaTitle) return;
-    try {
-      const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
-      const searchTitle = getCleanTitle(state.currentMangaTitle);
-      const res = await fetch(`${baseUrl}/api/proxy-chapters?title=${encodeURIComponent(searchTitle)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.chapters && data.chapters.length > 0) {
-          state.availableChapters = data.chapters;
-          state.maxChapter = data.maxChapter;
-          rebuildChapterSelect();
-          return;
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocal ? 'http://localhost:3000' : '';
+
+    if (baseUrl) {
+      try {
+        const searchTitle = getCleanTitle(state.currentMangaTitle);
+        const res = await fetch(`${baseUrl}/api/proxy-chapters?title=${encodeURIComponent(searchTitle)}`);
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+          const data = await res.json();
+          if (data.chapters && data.chapters.length > 0) {
+            state.availableChapters = data.chapters;
+            state.maxChapter = data.maxChapter;
+            rebuildChapterSelect();
+            return;
+          }
         }
+      } catch (e) {
+        console.warn("Failed to load chapters from proxy:", e.message);
       }
-    } catch (e) {
-      console.warn("Failed to load chapters from proxy:", e.message);
     }
 
-    // Fallback to MangaDex aggregate
+    // Fallback to MangaDex aggregate (works directly on GitHub Pages!)
     try {
       if (state.mangaDexId) {
-        const aggRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga/${state.mangaDexId}/aggregate?translatedLanguage[]=en`);
-        const aggData = await aggRes.json();
+        const aggData = await fetchMangaDex(`https://api.mangadex.org/manga/${state.mangaDexId}/aggregate?translatedLanguage[]=en`);
         const chList = [];
         let maxCh = 1;
         if (aggData.volumes) {
@@ -925,56 +952,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchChapterPages(chapterNumber) {
     state.currentChapterPages = null;
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3000' : '';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocal ? 'http://localhost:3000' : '';
 
-    // 1. Try local proxy scraper (WeebCentral) first - contains 100% full scans for all chapters!
-    try {
-      const searchTitle = getCleanTitle(state.currentMangaTitle);
-      console.log(`[Reader] Fetching Chapter ${chapterNumber} of "${searchTitle}" via proxy...`);
-      const res = await fetch(`${baseUrl}/api/proxy-manga?title=${encodeURIComponent(searchTitle)}&chapter=${chapterNumber}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.pages && data.pages.length > 0) {
-          state.currentChapterPages = data.pages.map(p => {
-            if (p.startsWith('/api/') && baseUrl) {
-              return `${baseUrl}${p}`;
-            }
-            if (p.startsWith('http') && !p.includes('/api/proxy-image')) {
-              return `${baseUrl}/api/proxy-image?url=${encodeURIComponent(p)}`;
-            }
-            return p;
-          });
-          console.log(`[Reader] Successfully loaded ${data.pages.length} pages from proxy!`);
-          return true;
+    // 1. Try local proxy scraper (WeebCentral) first if on localhost or proxy available
+    if (baseUrl) {
+      try {
+        const searchTitle = getCleanTitle(state.currentMangaTitle);
+        console.log(`[Reader] Fetching Chapter ${chapterNumber} of "${searchTitle}" via proxy...`);
+        const res = await fetch(`${baseUrl}/api/proxy-manga?title=${encodeURIComponent(searchTitle)}&chapter=${chapterNumber}`);
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+          const data = await res.json();
+          if (data.pages && data.pages.length > 0) {
+            state.currentChapterPages = data.pages.map(p => {
+              if (p.startsWith('/api/') && baseUrl) {
+                return `${baseUrl}${p}`;
+              }
+              if (p.startsWith('http') && !p.includes('/api/proxy-image')) {
+                return `${baseUrl}/api/proxy-image?url=${encodeURIComponent(p)}`;
+              }
+              return p;
+            });
+            console.log(`[Reader] Successfully loaded ${data.pages.length} pages from proxy!`);
+            return true;
+          }
         }
+      } catch (e) {
+        console.warn(`[Reader] Proxy failed for Ch ${chapterNumber}:`, e.message);
       }
-    } catch (e) {
-      console.warn(`[Reader] Proxy failed for Ch ${chapterNumber}:`, e.message);
     }
 
-    // 2. Fallback to MangaDex if proxy unavailable
+    // 2. Direct MangaDex fetch (works on GitHub Pages, Render, and localhost!)
     if (state.mangaDexId) {
       try {
-        console.log(`[Reader] Trying MangaDex fallback for Chapter ${chapterNumber}...`);
+        console.log(`[Reader] Trying MangaDex for Chapter ${chapterNumber}...`);
         let chapterUuid = null;
         if (state.availableChapters && state.availableChapters.length > 0) {
           const found = state.availableChapters.find(c => c.number === parseFloat(chapterNumber));
           if (found && found.id && found.id.length > 30) chapterUuid = found.id;
         }
         if (!chapterUuid) {
-          const chSearchRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/chapter?manga=${state.mangaDexId}&chapter=${chapterNumber}&translatedLanguage[]=en&limit=1`);
-          const chData = await chSearchRes.json();
+          const chData = await fetchMangaDex(`https://api.mangadex.org/chapter?manga=${state.mangaDexId}&chapter=${chapterNumber}&translatedLanguage[]=en&limit=1`);
           if (chData.data && chData.data.length > 0) {
             chapterUuid = chData.data[0].id;
           }
         }
         if (chapterUuid) {
-          const serverRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/at-home/server/${chapterUuid}`);
-          const serverData = await serverRes.json();
-          const baseUrl = serverData.baseUrl;
+          const serverData = await fetchMangaDex(`https://api.mangadex.org/at-home/server/${chapterUuid}`);
+          const mdBaseUrl = serverData.baseUrl;
           const hash = serverData.chapter?.hash;
-          if (hash && serverData.chapter?.data && serverData.chapter.data.length >= 5) {
-            state.currentChapterPages = serverData.chapter.data.map(f => `${baseUrl}/data/${hash}/${f}`);
+          if (hash && serverData.chapter?.data && serverData.chapter.data.length >= 1) {
+            state.currentChapterPages = serverData.chapter.data.map(f => `${mdBaseUrl}/data/${hash}/${f}`);
             console.log(`[Reader] Loaded ${state.currentChapterPages.length} pages from MangaDex!`);
             return true;
           }
@@ -1209,10 +1237,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------
 
   function createMangaCard(manga) {
-    const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown';
+    const title = (manga.attributes && manga.attributes.title) ? (manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown') : 'Unknown';
     const coverArt = manga.relationships ? manga.relationships.find(r => r.type === 'cover_art') : null;
-    const fileName = coverArt ? coverArt.attributes.fileName : '';
-    const coverUrl = fileName ? `/api/proxy-image?url=https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'placeholder.jpg';
+    const fileName = coverArt && coverArt.attributes ? coverArt.attributes.fileName : '';
+    const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}.256.jpg` : 'logo.jpg';
     
     const card = document.createElement('div');
     card.className = 'manga-card';
@@ -1233,8 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loader.style.display = 'block';
     try {
-      const res = await fetch(`/api/proxy-mangadex?url=${encodeURIComponent('https://api.mangadex.org/manga?limit=24&order[latestUploadedChapter]=desc&includes[]=cover_art&contentRating[]=safe')}`);
-      const data = await res.json();
+      const data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=24&order[latestUploadedChapter]=desc&includes[]=cover_art&contentRating[]=safe`);
       grid.innerHTML = '';
       if(data.data) {
          data.data.forEach(manga => {
@@ -1256,8 +1283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loader.style.display = 'block';
     try {
-      const res = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?limit=100%26order[followedCount]=desc%26includes[]=cover_art%26contentRating[]=safe`);
-      const data = await res.json();
+      const data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=100&order[followedCount]=desc&includes[]=cover_art&contentRating[]=safe`);
       grid.innerHTML = '';
       if(data.data) {
         data.data.forEach((manga, i) => {
@@ -1291,8 +1317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortType === 'az') orderString = 'order[title]=asc';
         if (sortType === 'za') orderString = 'order[title]=desc';
         
-        const res = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?limit=30%26${orderString}%26includes[]=cover_art%26contentRating[]=safe`);
-        const data = await res.json();
+        const data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=30&${orderString}&includes[]=cover_art&contentRating[]=safe`);
         if(data.data) {
            data.data.forEach(manga => {
               const card = createMangaCard(manga);
@@ -1342,15 +1367,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Fetch their works
       try {
-        const authRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/author?name=${encodeURIComponent(author.search)}`);
-        const authData = await authRes.json();
+        const authData = await fetchMangaDex(`https://api.mangadex.org/author?name=${encodeURIComponent(author.search)}`);
         const worksGrid = authorBox.querySelector('.creator-works-grid');
         worksGrid.innerHTML = '';
 
         if(authData.data && authData.data.length > 0) {
           const authorId = authData.data[0].id;
-          const mangaRes = await fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga?authors[]=${authorId}%26includes[]=cover_art%26contentRating[]=safe`);
-          const mangaData = await mangaRes.json();
+          const mangaData = await fetchMangaDex(`https://api.mangadex.org/manga?authors[]=${authorId}&includes[]=cover_art&contentRating[]=safe`);
           
           if(mangaData.data && mangaData.data.length === 0) {
              worksGrid.innerHTML = '<div style="color: var(--text-main);">No works found.</div>';
@@ -1382,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     emptyMsg.style.display = 'none';
     
     const fetchPromises = bookmarks.map(b => 
-      fetch(`/api/proxy-mangadex?url=https://api.mangadex.org/manga/${b.id}?includes[]=cover_art`).then(r => r.json())
+      fetchMangaDex(`https://api.mangadex.org/manga/${b.id}?includes[]=cover_art`)
     );
 
     Promise.all(fetchPromises).then(results => {
