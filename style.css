@@ -63,7 +63,10 @@ body {
 .manga-viewer {
   position: relative;
   z-index: 10;
-  background: radial-gradient(circle at center, #181a20 0%, #0c0d11 100%);
+  background: var(--bg-color); /* Soft warm cream paper */
+  background-image: 
+    radial-gradient(circle at 50% 20%, rgba(255, 140, 0, 0.08) 0%, transparent 60%),
+    linear-gradient(0deg, rgba(210, 105, 30, 0.05) 0%, transparent 40%);
   min-height: 100vh;
 }
 .hex-row:nth-child(even) {
@@ -365,12 +368,19 @@ body {
   overflow: hidden; /* No scroll in reader */
   align-items: center;
   padding: 1rem;
+  background: var(--bg-color);
+  background-image: 
+    radial-gradient(circle at 50% 20%, rgba(255, 140, 0, 0.08) 0%, transparent 60%),
+    linear-gradient(0deg, rgba(210, 105, 30, 0.05) 0%, transparent 40%);
+  min-height: 100vh;
 }
 
 .page-container {
   flex: 1;
   width: auto;
   max-width: 100%;
+  min-height: 75vh;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -405,9 +415,9 @@ body {
   width: auto;
   display: block;
   object-fit: contain;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.9);
-  background-color: #0c0d11; /* Clean dark background */
-  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(74, 59, 50, 0.15);
+  background-color: #ffffff; /* Clean soft white background */
+  border-radius: 6px;
 }
 
 .manga-page.spread { max-width: 50%; }
@@ -438,7 +448,7 @@ body {
 .nav-btn:hover:not(:disabled) { background-color: rgba(255, 140, 0, 0.4); border-color: rgba(255, 140, 0, 0.9); transform: translateY(-2px); }
 .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.page-info { font-weight: 600; color: #f5f5f5; font-family: 'Oswald', sans-serif; letter-spacing: 1px; font-size: 1.1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+.page-info { font-weight: 600; color: var(--text-main); font-family: 'Oswald', sans-serif; letter-spacing: 1px; font-size: 1.1rem; text-shadow: none; }
 
 /* Fullscreen Mode */
 body.fullscreen-mode .top-nav,
@@ -451,11 +461,11 @@ body.fullscreen-mode .manga-viewer {
 }
 
 body.fullscreen-mode {
-  background-color: #020305;
+  background-color: #fffaf0;
   background-image: 
-    radial-gradient(circle at center, transparent 30%, #000000 90%),
-    linear-gradient(rgba(0, 238, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 238, 255, 0.04) 1px, transparent 1px);
+    radial-gradient(circle at center, transparent 30%, rgba(210, 105, 30, 0.05) 90%),
+    linear-gradient(rgba(210, 105, 30, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(210, 105, 30, 0.03) 1px, transparent 1px);
   background-size: 100% 100%, 40px 40px, 40px 40px;
   background-attachment: fixed;
 }

@@ -1692,6 +1692,71 @@
     ]
   },
   {
+    "id": "c8b55f34-21a4-4ca7-8e5d-d58d38fe3203",
+    "type": "manga",
+    "attributes": {
+      "title": {
+        "en": "Blue Lock (Colored Edition)"
+      },
+      "altTitles": [
+        {
+          "ja-ro": "Blue Lock (Colored)"
+        },
+        {
+          "en": "Blue Lock Colored"
+        },
+        {
+          "ja": "ブルーロック カラー版"
+        }
+      ],
+      "description": {
+        "en": "After a disastrous defeat at the 2018 World Cup, Japan's team struggles to regroup. But what's missing? An absolute Ace Striker. Jinpachi Ego creates Blue Lock to forge the world's greatest egoist striker. Now in full vibrant color!"
+      },
+      "originalLanguage": "ja",
+      "status": "ongoing",
+      "year": 2018,
+      "contentRating": "safe",
+      "tags": [
+        {
+          "id": "6996034f-8025-499d-99f7-08e12c61ec35",
+          "type": "tag",
+          "attributes": {
+            "name": {
+              "en": "Sports"
+            }
+          }
+        },
+        {
+          "id": "391b0423-d847-456f-aff0-8b0cfc03066b",
+          "type": "tag",
+          "attributes": {
+            "name": {
+              "en": "Action"
+            }
+          }
+        },
+        {
+          "id": "e5301a23-ebd9-49dd-a0cb-2add944c7fe9",
+          "type": "tag",
+          "attributes": {
+            "name": {
+              "en": "Colored"
+            }
+          }
+        }
+      ]
+    },
+    "relationships": [
+      {
+        "id": "cover-blr-col",
+        "type": "cover_art",
+        "attributes": {
+          "fileName": "010f2b44-97a0-4d4e-870a-e8f93f87fa8f.jpg"
+        }
+      }
+    ]
+  },
+  {
     "id": "a1c7c817-4e59-43b7-9365-09675a149a6f",
     "type": "manga",
     "attributes": {

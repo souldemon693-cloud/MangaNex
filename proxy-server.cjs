@@ -5,6 +5,13 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Private-Network', 'true');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
 
 // Anti-caching for HTML entry points to ensure browsers always load latest client updates
 app.use((req, res, next) => {
@@ -42,6 +49,10 @@ const HEADERS = {
 // Pre-populated verified series IDs for lightning-fast lookups (bypasses search latency & blocks)
 const seriesCache = {
   "blue lock": "01J76XYD7E91K8QP6CY0Y53900",
+  "blue lock (colored)": "01J76XYD7E91K8QP6CY0Y53900",
+  "blue lock (colored edition)": "01J76XYD7E91K8QP6CY0Y53900",
+  "blue lock (fan colored)": "01J76XYD7E91K8QP6CY0Y53900",
+  "blue lock colored": "01J76XYD7E91K8QP6CY0Y53900",
   "jujutsu kaisen": "01J76XYCERXE60T7FKXVCCAQ0H",
   "attack on titan": "01J76XY7KWP8KX5RFGVZY5TR95",
   "shingeki no kyojin": "01J76XY7KWP8KX5RFGVZY5TR95",
@@ -109,6 +120,10 @@ const aliasMap = {
   'solo leveling': 'Solo Leveling',
   'jujutsu kaisen': 'Jujutsu Kaisen',
   'blue lock': 'Blue Lock',
+  'blue lock (colored)': 'Blue Lock',
+  'blue lock (colored edition)': 'Blue Lock',
+  'blue lock (fan colored)': 'Blue Lock',
+  'blue lock colored': 'Blue Lock',
   'one piece': 'One Piece',
   'naruto': 'Naruto',
   'bleach': 'Bleach',

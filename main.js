@@ -256,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const sportsIds = [
         'f65444dc-3694-4e31-a166-8afb2938ed55', // Gintama
         '4141c5dc-c525-4df5-afd7-cc7d192a832f', // Blue Lock
+        'c8b55f34-21a4-4ca7-8e5d-d58d38fe3203', // Blue Lock (Colored Edition)
         'edb82d3c-20f6-4cf9-a879-7457478642fe', // Haikyu!!
         '319df2e2-e6a6-4e3a-a31c-68539c140a84', // Slam Dunk
         '736a2bf0-f875-4b52-a7b4-e8c40505b68a'  // Mob Psycho 100
@@ -264,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const rankedIds = [
         "4141c5dc-c525-4df5-afd7-cc7d192a832f", // Blue Lock
+        "c8b55f34-21a4-4ca7-8e5d-d58d38fe3203", // Blue Lock (Colored Edition)
         "a1c7c817-4e59-43b7-9365-09675a149a6f", // One Piece
         "c52b2ce3-7f95-469c-96b0-479524fb7a1a", // Jujutsu Kaisen
         "db692d58-4b13-4174-ae8c-30c515c0689c", // Hunter x Hunter
@@ -320,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!allData || allData.length === 0) {
         allData = [
           { id: "4141c5dc-c525-4df5-afd7-cc7d192a832f", attributes: { title: { en: "Blue Lock" }, tags: [{ attributes: { name: { en: "Sports" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "7ee723d4-b926-4a81-acd9-53adb3fbe461.jpg" } }] },
+          { id: "c8b55f34-21a4-4ca7-8e5d-d58d38fe3203", attributes: { title: { en: "Blue Lock (Colored Edition)" }, tags: [{ attributes: { name: { en: "Sports" } } }, { attributes: { name: { en: "Colored" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "010f2b44-97a0-4d4e-870a-e8f93f87fa8f.jpg" } }] },
           { id: "a1c7c817-4e59-43b7-9365-09675a149a6f", attributes: { title: { en: "One Piece" }, tags: [{ attributes: { name: { en: "Action" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "2f4aca53-64c7-46ac-ae85-3bc9b3169890.png" } }] },
           { id: "c52b2ce3-7f95-469c-96b0-479524fb7a1a", attributes: { title: { en: "Jujutsu Kaisen" }, tags: [{ attributes: { name: { en: "Action" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "258999da-cbcf-4dd9-8786-91f5eaa968b8.png" } }] },
           { id: "db692d58-4b13-4174-ae8c-30c515c0689c", attributes: { title: { en: "Hunter x Hunter" }, tags: [{ attributes: { name: { en: "Adventure" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "aa112927-f1e5-4fe4-a4db-7fd4a1536e3c.jpg" } }] },
@@ -378,10 +381,12 @@ document.addEventListener('DOMContentLoaded', () => {
            
            slide.innerHTML = `
              <!-- Blurred background layer using the cover -->
-             <div style="position: absolute; inset: -20px; background-image: url('${coverUrl}'); background-size: cover; background-position: center; filter: blur(15px); opacity: 0.5;"></div>
+             <div style="position: absolute; inset: -20px; overflow: hidden;">
+               <img src="${coverUrl}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null; this.src='logo.jpg';" style="width: 100%; height: 100%; object-fit: cover; filter: blur(15px); opacity: 0.5;">
+             </div>
              
              <!-- Real Cover (Uncropped) -->
-             <img src="${coverUrl}" alt="${title}" style="position: absolute; right: 5%; top: 5%; bottom: 5%; height: 90%; object-fit: contain; border-radius: 6px; box-shadow: -10px 0 30px rgba(0,0,0,0.8); z-index: 2;">
+             <img src="${coverUrl}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null; this.src='logo.jpg';" style="position: absolute; right: 5%; top: 5%; bottom: 5%; height: 90%; object-fit: contain; border-radius: 6px; box-shadow: -10px 0 30px rgba(0,0,0,0.8); z-index: 2;">
              
              <!-- Dark gradient overlay for text readability -->
              <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0.2) 100%); z-index: 1;"></div>
@@ -442,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
            item.onclick = () => openManga(manga.id, title);
            
            item.innerHTML = `
-              <img src="${coverUrl}" alt="${title}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+              <img src="${coverUrl}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null; this.src='logo.jpg';" style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
               <div style="display: flex; flex-direction: column; gap: 0.2rem; flex: 1;">
                  <div style="display: flex; gap: 0.8rem; align-items: flex-start;">
                    <span style="font-weight: 800; font-size: 1.4rem; color: rgba(255,255,255,0.6); font-family: 'Oswald', sans-serif; width: 20px; text-align: center;">${index + 1}</span>
@@ -494,7 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = document.createElement('div');
         card.className = 'manga-catalog-card';
         card.innerHTML = `
-          <div class="manga-cover" style="background-image: url('${coverUrl}'); background-size: cover; background-position: center; height: 260px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s ease;">
+          <div class="manga-cover" style="position: relative; height: 260px; border-radius: 8px; overflow: hidden; background: #e8e2d9; border: 1px solid rgba(255,140,0,0.2); transition: all 0.3s ease;">
+            <img src="${coverUrl}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='logo.jpg';">
           </div>
           <div style="padding: 0.8rem 0;">
             <div class="manga-title" style="color: var(--text-main); font-weight: 600; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${title}</div>
@@ -865,6 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = state.currentChapterPages[page - 1];
     if (url && !preloadedImages[url]) {
       const img = new Image();
+      img.referrerPolicy = 'no-referrer';
       img.src = url;
       preloadedImages[url] = img;
     }
@@ -888,6 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return new Promise((resolve, reject) => {
       if (!url) return reject();
       const img = new Image();
+      img.referrerPolicy = 'no-referrer';
       img.onload = () => resolve(url);
       img.onerror = () => reject();
       img.src = url;
@@ -908,7 +916,16 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadChaptersForCurrentManga() {
     if (!state.currentMangaTitle) return;
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocal ? 'http://localhost:3000' : '';
+    let baseUrl = isLocal ? 'http://localhost:3000' : '';
+
+    if (!baseUrl) {
+      try {
+        const ping = await fetch('http://localhost:3000/api/proxy-chapters?title=ping', { signal: AbortSignal.timeout(600) });
+        if (ping.ok || ping.status === 400 || ping.status === 404) {
+          baseUrl = 'http://localhost:3000';
+        }
+      } catch (e) {}
+    }
 
     if (baseUrl) {
       try {
@@ -928,39 +945,73 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Fallback to MangaDex aggregate (works directly on GitHub Pages!)
+    // Fallback to MangaDex aggregate or chapters feed
     try {
       if (state.mangaDexId) {
-        const aggData = await fetchMangaDex(`https://api.mangadex.org/manga/${state.mangaDexId}/aggregate?translatedLanguage[]=en`);
-        const chList = [];
+        let chList = [];
         let maxCh = 1;
-        if (aggData.volumes) {
-          for (const vol of Object.values(aggData.volumes)) {
-            for (const ch of Object.values(vol.chapters)) {
-              const num = parseFloat(ch.chapter);
-              if (!isNaN(num)) {
-                if (num > maxCh) maxCh = Math.floor(num);
-                chList.push({ number: num, text: `Chapter ${num}`, id: ch.id });
+        try {
+          const aggData = await fetchMangaDex(`https://api.mangadex.org/manga/${state.mangaDexId}/aggregate`);
+          if (aggData && aggData.volumes) {
+            for (const vol of Object.values(aggData.volumes)) {
+              if (vol.chapters) {
+                for (const ch of Object.values(vol.chapters)) {
+                  const num = parseFloat(ch.chapter);
+                  if (!isNaN(num)) {
+                    if (num > maxCh) maxCh = Math.floor(num);
+                    chList.push({ number: num, text: `Chapter ${num}`, id: ch.id });
+                  }
+                }
               }
             }
           }
+        } catch (e) {}
+
+        if (chList.length < 10) {
+          try {
+            const feedData = await fetchMangaDex(`https://api.mangadex.org/manga/${state.mangaDexId}/feed?limit=500&order[chapter]=asc`);
+            if (feedData && feedData.data) {
+              const seen = new Set(chList.map(c => c.number));
+              feedData.data.forEach(c => {
+                const num = parseFloat(c.attributes.chapter);
+                if (!isNaN(num) && !seen.has(num)) {
+                  seen.add(num);
+                  if (num > maxCh) maxCh = Math.floor(num);
+                  chList.push({ number: num, text: `Chapter ${num}`, id: c.id });
+                }
+              });
+            }
+          } catch(e) {}
         }
+
         chList.sort((a,b) => a.number - b.number);
         if (chList.length > 0) {
           state.availableChapters = chList;
-          state.maxChapter = maxCh;
+          state.maxChapter = Math.max(maxCh, chList.length);
+          rebuildChapterSelect();
+        } else {
+          state.maxChapter = Math.max(state.maxChapter || 50, 50);
           rebuildChapterSelect();
         }
       }
     } catch (e) {
-      console.warn("MangaDex aggregate fallback failed:", e.message);
+      console.warn("MangaDex chapter loading error:", e.message);
     }
   }
 
   async function fetchChapterPages(chapterNumber) {
     state.currentChapterPages = null;
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseUrl = isLocal ? 'http://localhost:3000' : '';
+    let baseUrl = isLocal ? 'http://localhost:3000' : '';
+
+    if (!baseUrl) {
+      try {
+        const ping = await fetch('http://localhost:3000/api/proxy-chapters?title=ping', { signal: AbortSignal.timeout(600) });
+        if (ping.ok || ping.status === 400 || ping.status === 404) {
+          baseUrl = 'http://localhost:3000';
+        }
+      } catch (e) {}
+    }
 
     // 1. Try local proxy scraper (WeebCentral) first if on localhost or proxy available
     if (baseUrl) {
@@ -994,16 +1045,33 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         console.log(`[Reader] Trying MangaDex for Chapter ${chapterNumber}...`);
         let chapterUuid = null;
-        if (state.availableChapters && state.availableChapters.length > 0) {
+
+        // Try English internal chapter
+        try {
+          const chData = await fetchMangaDex(`https://api.mangadex.org/chapter?manga=${state.mangaDexId}&chapter=${chapterNumber}&translatedLanguage[]=en&limit=10`);
+          if (chData && chData.data && chData.data.length > 0) {
+            const internal = chData.data.find(c => !c.attributes.externalUrl);
+            if (internal) chapterUuid = internal.id;
+          }
+        } catch (e) {}
+
+        // If English not found or external, try any language internal chapter
+        if (!chapterUuid) {
+          try {
+            const anyData = await fetchMangaDex(`https://api.mangadex.org/chapter?manga=${state.mangaDexId}&chapter=${chapterNumber}&limit=10`);
+            if (anyData && anyData.data && anyData.data.length > 0) {
+              const internal = anyData.data.find(c => !c.attributes.externalUrl);
+              if (internal) chapterUuid = internal.id;
+            }
+          } catch (e) {}
+        }
+
+        // Try chapterUuid from availableChapters
+        if (!chapterUuid && state.availableChapters && state.availableChapters.length > 0) {
           const found = state.availableChapters.find(c => c.number === parseFloat(chapterNumber));
           if (found && found.id && found.id.length > 30) chapterUuid = found.id;
         }
-        if (!chapterUuid) {
-          const chData = await fetchMangaDex(`https://api.mangadex.org/chapter?manga=${state.mangaDexId}&chapter=${chapterNumber}&translatedLanguage[]=en&limit=1`);
-          if (chData.data && chData.data.length > 0) {
-            chapterUuid = chData.data[0].id;
-          }
-        }
+
         if (chapterUuid) {
           const serverData = await fetchMangaDex(`https://api.mangadex.org/at-home/server/${chapterUuid}`);
           const mdBaseUrl = serverData.baseUrl;
@@ -1044,15 +1112,51 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!success || !state.currentChapterPages || state.currentChapterPages.length === 0) {
         isLoading = false;
         if (errorOverlay) {
-          errorOverlay.innerHTML = `<h3>CHAPTER UNAVAILABLE</h3><p style="font-size: 1rem; color: #ccc; margin-top: 1rem; font-family: Inter, sans-serif; font-weight: normal;">Could not load Chapter ${state.chapter} for "${state.currentMangaTitle}". Please choose another chapter or click Retry.</p><button id="retryChBtn" class="primary-btn" style="margin-top: 1rem; padding: 0.5rem 1.5rem; cursor: pointer;">Retry Chapter</button>`;
+          const isBlueLock = state.currentMangaTitle && state.currentMangaTitle.toLowerCase().includes('blue lock') && !state.currentMangaTitle.toLowerCase().includes('colored');
+          let extraAction = '';
+          if (isBlueLock) {
+            extraAction = `
+              <div style="margin-top: 1.2rem;">
+                <button id="switchColoredBtn" class="primary-btn" style="background: linear-gradient(135deg, #ff8c00, #ff4500); padding: 0.7rem 1.6rem; font-size: 1rem; border-radius: 8px; cursor: pointer; border: none; color: white; font-weight: bold; box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);">
+                  🎨 Read Blue Lock (Colored Edition)
+                </button>
+              </div>
+            `;
+          }
+
+          errorOverlay.innerHTML = `
+            <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📖</div>
+            <h3 style="font-family: Oswald, sans-serif; font-size: 1.8rem; color: var(--accent-color); margin-bottom: 0.5rem; letter-spacing: 1px;">CHAPTER ${state.chapter}</h3>
+            <p style="font-size: 1rem; color: var(--text-main); margin: 0.8rem 0; font-family: Inter, sans-serif; line-height: 1.6;">
+              Could not load pages for Chapter ${state.chapter} of <strong>${state.currentMangaTitle}</strong>.
+            </p>
+            ${extraAction}
+            <div style="display: flex; gap: 0.8rem; justify-content: center; margin-top: 1.2rem; flex-wrap: wrap;">
+              <button id="nextChBtn" class="primary-btn" style="padding: 0.6rem 1.4rem; cursor: pointer;">Next Chapter ➔</button>
+              <button id="retryChBtn" class="secondary-btn" style="padding: 0.6rem 1.4rem; cursor: pointer;">Retry</button>
+            </div>
+          `;
           errorOverlay.style.display = 'block';
+
+          const switchColoredBtn = document.getElementById('switchColoredBtn');
+          if (switchColoredBtn) {
+            switchColoredBtn.onclick = () => {
+              openManga("c8b55f34-21a4-4ca7-8e5d-d58d38fe3203", "Blue Lock (Colored Edition)");
+            };
+          }
+          const nextChBtn = document.getElementById('nextChBtn');
+          if (nextChBtn) {
+            nextChBtn.onclick = () => goToNextChapter();
+          }
           const retryBtn = document.getElementById('retryChBtn');
-          if (retryBtn) retryBtn.onclick = () => {
-            state.currentChapterPages = null;
-            loadPage();
-          };
+          if (retryBtn) {
+            retryBtn.onclick = () => {
+              state.currentChapterPages = null;
+              loadPage();
+            };
+          }
         }
-        pageInfo.textContent = "Error";
+        pageInfo.textContent = `Ch ${state.chapter} (Unavailable)`;
         return;
       }
     }
@@ -1252,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'manga-card';
     card.innerHTML = `
-      <img src="${coverUrl}" alt="${title}">
+      <img src="${coverUrl}" alt="${title}" referrerpolicy="no-referrer" loading="lazy" onerror="this.onerror=null; this.src='logo.jpg';">
       <div class="manga-info">
         <h3 class="manga-title">${title}</h3>
       </div>
