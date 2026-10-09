@@ -263,67 +263,74 @@ document.addEventListener('DOMContentLoaded', () => {
       const famousIds = [...shonenIds, ...seinenIds, ...sportsIds];
       
       const rankedIds = [
-        "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", // Solo Leveling
-        "4141c5dc-c525-4df5-afd7-cc7d192a832f", // Blue Lock (Native)
-        "304cefd3-89ab-473e-ac87-3209598bd049", // Attack on Titan (Colored)
+        "4141c5dc-c525-4df5-afd7-cc7d192a832f", // Blue Lock
+        "a1c7c817-4e59-43b7-9365-09675a149a6f", // One Piece
         "c52b2ce3-7f95-469c-96b0-479524fb7a1a", // Jujutsu Kaisen
-        "a2c1d849-af05-4bbc-b2a7-866ebb10331f", // One Piece (Colored)
-        "a787b10a-02d0-46c0-8236-0d01d69ad4a3", // Naruto (Colored)
-        "a460ab18-22c1-47eb-a08a-9ee85fe37ec8", // Bleach (Colored)
-        "af0527c1-8734-4498-b128-7090340bc10d", // Dragon Ball (Colored)
-        "c1d6d092-811d-49d2-b143-0d12bc3fd9dd", // My Hero Academia (Colored)
-        "62040a44-0935-46b7-a691-5ae5833af0ae", // Demon Slayer (Colored)
-        "e896c48c-3150-437d-ba57-d8567eb399ae", // Chainsaw Man (Colored)
-        "db692d58-4b13-4174-ae8c-30c515c0689c", // Hunter x Hunter (Native)
-        "801513ba-a712-498c-8f57-cae55b38cc92", // Berserk (Native)
+        "db692d58-4b13-4174-ae8c-30c515c0689c", // Hunter x Hunter
+        "801513ba-a712-498c-8f57-cae55b38cc92", // Berserk
+        "6b1eb93e-473a-4ab3-9922-1a66d2a29a4a", // Naruto
+        "a460ab18-22c1-47eb-a08a-9ee85fe37ec8", // Bleach
+        "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", // Solo Leveling
+        "e896c48c-3150-437d-ba57-d8567eb399ae", // Chainsaw Man
+        "304ceac3-8cdb-4fe7-acf7-2b62403ab1e4", // Attack on Titan
+        "b58373e3-7762-4211-9657-36e2d832c3f1", // Tokyo Ghoul
+        "d8a959f7-648e-4c8d-8f23-f1f3f8e129f3", // One Punch-Man
       ];
-      const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('&');
-      
-      // Check cache first to avoid blank screen on rate limits
+
+      // Check cache first to avoid blank screen or loading lag
       const cachedData = localStorage.getItem('manganex_cache');
-      let data1 = { data: [] };
-      let data2 = { data: [] };
-      
-      try {
-        data1 = await fetchMangaDex(`https://api.mangadex.org/manga?limit=40&includes[]=cover_art&${idsQuery}`);
-        data2 = await fetchMangaDex(`https://api.mangadex.org/manga?limit=100&includes[]=cover_art&order[followedCount]=desc&contentRating[]=safe&contentRating[]=suggestive`);
-      } catch (err) {
-        console.warn("MangaDex API fetch failed, falling back to cache or hardcoded data:", err);
-        if (cachedData) {
-          const parsedCache = JSON.parse(cachedData);
-          allMangaDataCache = parsedCache;
-          renderGrid(parsedCache);
-          renderCarousel(parsedCache);
-          return;
-        } else {
-          // If no cache, use this ultra-reliable hardcoded fallback so the app never crashes
-          console.warn("No cache found. Using hardcoded emergency fallback.");
-          const fallbackData = [
-            { id: "4141c5dc-c525-4df5-afd7-cc7d192a832f", attributes: { title: { en: "Blue Lock" } }, relationships: [{ type: "cover_art", attributes: { fileName: "7ee723d4-b926-4a81-acd9-53adb3fbe461.jpg" } }] },
-            { id: "a2c1d849-af05-4bbc-b2a7-866ebb10331f", attributes: { title: { en: "One Piece" } }, relationships: [{ type: "cover_art", attributes: { fileName: "da0341d8-5526-452c-8bd3-dc8e3cd89f99.jpg" } }] },
-            { id: "c52b2ce3-7f95-469c-96b0-479524fb7a1a", attributes: { title: { en: "Jujutsu Kaisen" } }, relationships: [{ type: "cover_art", attributes: { fileName: "6d9134b2-21ea-4d02-ac2b-7c0d1c6a2aaa.jpg" } }] },
-            { id: "db692d58-4b13-4174-ae8c-30c515c0689c", attributes: { title: { en: "Hunter x Hunter" } }, relationships: [{ type: "cover_art", attributes: { fileName: "aa112927-f1e5-4fe4-a4db-7fd4a1536e3c.jpg" } }] },
-            { id: "801513ba-a712-498c-8f57-cae55b38cc92", attributes: { title: { en: "Berserk" } }, relationships: [{ type: "cover_art", attributes: { fileName: "81e1c82d-6672-400c-8c58-4ff9bfb89031.jpg" } }] }
-          ];
-          allMangaDataCache = fallbackData;
-          renderGrid(fallbackData);
-          renderCarousel(fallbackData);
-          return;
+      let allData = [];
+
+      // 1. On localhost, try live proxy to MangaDex
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocal) {
+        try {
+          const idsQuery = rankedIds.map(id => `ids[]=${id}`).join('&');
+          const data1 = await fetchMangaDex(`https://api.mangadex.org/manga?limit=40&includes[]=cover_art&${idsQuery}`);
+          const data2 = await fetchMangaDex(`https://api.mangadex.org/manga?limit=100&includes[]=cover_art&order[followedCount]=desc&contentRating[]=safe&contentRating[]=suggestive`);
+          if (data1?.data) {
+            allData = [...data1.data];
+            (data2?.data || []).forEach(m => {
+              if (!allData.find(x => x.id === m.id)) allData.push(m);
+            });
+          }
+        } catch (e) {
+          console.warn("Local live fetch failed, will load local static dataset:", e);
         }
       }
-      
-      let allData = [];
-      
-      data1.data.forEach(manga => {
-         allData.push(manga);
-      });
-      
-      data2.data.forEach(manga => {
-         if (!allData.find(m => m.id === manga.id)) {
-            allData.push(manga);
-         }
-      });
-      
+
+      // 2. Load pre-packaged high-quality catalog dataset (works 100% on GitHub Pages with zero CORS or rate limits!)
+      if (!allData || allData.length === 0) {
+        try {
+          const staticRes = await fetch('./manga_data.json');
+          if (staticRes.ok) {
+            allData = await staticRes.json();
+          }
+        } catch (e) {
+          console.warn("Could not load ./manga_data.json:", e);
+        }
+      }
+
+      // 3. Fallback to localStorage cache
+      if ((!allData || allData.length === 0) && cachedData) {
+        allData = JSON.parse(cachedData);
+      }
+
+      // 4. Emergency hardcoded fallback with 100% verified covers
+      if (!allData || allData.length === 0) {
+        allData = [
+          { id: "4141c5dc-c525-4df5-afd7-cc7d192a832f", attributes: { title: { en: "Blue Lock" }, tags: [{ attributes: { name: { en: "Sports" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "7ee723d4-b926-4a81-acd9-53adb3fbe461.jpg" } }] },
+          { id: "a1c7c817-4e59-43b7-9365-09675a149a6f", attributes: { title: { en: "One Piece" }, tags: [{ attributes: { name: { en: "Action" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "2f4aca53-64c7-46ac-ae85-3bc9b3169890.png" } }] },
+          { id: "c52b2ce3-7f95-469c-96b0-479524fb7a1a", attributes: { title: { en: "Jujutsu Kaisen" }, tags: [{ attributes: { name: { en: "Action" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "258999da-cbcf-4dd9-8786-91f5eaa968b8.png" } }] },
+          { id: "db692d58-4b13-4174-ae8c-30c515c0689c", attributes: { title: { en: "Hunter x Hunter" }, tags: [{ attributes: { name: { en: "Adventure" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "aa112927-f1e5-4fe4-a4db-7fd4a1536e3c.jpg" } }] },
+          { id: "801513ba-a712-498c-8f57-cae55b38cc92", attributes: { title: { en: "Berserk" }, tags: [{ attributes: { name: { en: "Horror" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "81e1c82d-6672-400c-8c58-4ff9bfb89031.jpg" } }] },
+          { id: "6b1eb93e-473a-4ab3-9922-1a66d2a29a4a", attributes: { title: { en: "Naruto" }, tags: [{ attributes: { name: { en: "Action" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "c5a3090c-4ca0-40a2-9102-e0ee0c6dac15.jpg" } }] },
+          { id: "a460ab18-22c1-47eb-a08a-9ee85fe37ec8", attributes: { title: { en: "Bleach" }, tags: [{ attributes: { name: { en: "Action" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "7c8f9203-2b82-41f2-beb3-e7fb00e151e2.jpg" } }] },
+          { id: "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0", attributes: { title: { en: "Solo Leveling" }, tags: [{ attributes: { name: { en: "Fantasy" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "e90bdc47-c8b9-4df7-b2c0-17641b645ee1.jpg" } }] },
+          { id: "e896c48c-3150-437d-ba57-d8567eb399ae", attributes: { title: { en: "Chainsaw Man" }, tags: [{ attributes: { name: { en: "Horror" } } }] }, relationships: [{ type: "cover_art", attributes: { fileName: "fa06e4e4-ef2a-477b-bfb6-a2a88793620b.jpg" } }] }
+        ];
+      }
+
       // Sort: explicitly ranked ones first, then maintain popular order
       allData.sort((a, b) => {
          const idxA = rankedIds.indexOf(a.id);
@@ -1261,14 +1268,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loader.style.display = 'block';
     try {
-      const data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=24&order[latestUploadedChapter]=desc&includes[]=cover_art&contentRating[]=safe`);
+      let data = null;
+      try {
+        data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=24&order[latestUploadedChapter]=desc&includes[]=cover_art&contentRating[]=safe`);
+      } catch (e) {}
+
       grid.innerHTML = '';
-      if(data.data) {
-         data.data.forEach(manga => {
-            const card = createMangaCard(manga);
-            if (card) grid.appendChild(card);
-         });
-      }
+      const list = (data && data.data && data.data.length > 0) ? data.data : (allMangaDataCache || []).slice(0, 24);
+      list.forEach(manga => {
+        const card = createMangaCard(manga);
+        if (card) grid.appendChild(card);
+      });
     } catch(err) {
       console.error("Updates error", err);
     } finally {
@@ -1283,20 +1293,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loader.style.display = 'block';
     try {
-      const data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=100&order[followedCount]=desc&includes[]=cover_art&contentRating[]=safe`);
+      let data = null;
+      try {
+        data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=100&order[followedCount]=desc&includes[]=cover_art&contentRating[]=safe`);
+      } catch (e) {}
+
       grid.innerHTML = '';
-      if(data.data) {
-        data.data.forEach((manga, i) => {
-          const card = createMangaCard(manga);
-          if (!card) return;
-          const rankBadge = document.createElement('div');
-          rankBadge.style.cssText = 'position: absolute; top: -10px; left: -10px; background: #ffaa00; color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-family: Oswald, sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10;';
-          rankBadge.innerText = i + 1;
-          card.style.position = 'relative';
-          card.appendChild(rankBadge);
-          grid.appendChild(card);
-        });
-      }
+      const list = (data && data.data && data.data.length > 0) ? data.data : (allMangaDataCache || []);
+      list.forEach((manga, i) => {
+        const card = createMangaCard(manga);
+        if (!card) return;
+        const rankBadge = document.createElement('div');
+        rankBadge.style.cssText = 'position: absolute; top: -10px; left: -10px; background: #ffaa00; color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; font-family: Oswald, sans-serif; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10;';
+        rankBadge.innerText = i + 1;
+        card.style.position = 'relative';
+        card.appendChild(rankBadge);
+        grid.appendChild(card);
+      });
     } catch(err) {
       console.error("Ranking error", err);
     } finally {
@@ -1317,13 +1330,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortType === 'az') orderString = 'order[title]=asc';
         if (sortType === 'za') orderString = 'order[title]=desc';
         
-        const data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=30&${orderString}&includes[]=cover_art&contentRating[]=safe`);
-        if(data.data) {
-           data.data.forEach(manga => {
-              const card = createMangaCard(manga);
-              if (card) grid.appendChild(card);
-           });
+        let data = null;
+        try {
+          data = await fetchMangaDex(`https://api.mangadex.org/manga?limit=30&${orderString}&includes[]=cover_art&contentRating[]=safe`);
+        } catch (e) {}
+
+        let list = (data && data.data && data.data.length > 0) ? data.data : [...(allMangaDataCache || [])];
+        if (!data || !data.data) {
+          if (sortType === 'az') {
+            list.sort((a,b) => {
+              const tA = (a.attributes?.title?.en || Object.values(a.attributes?.title || {})[0] || '').toLowerCase();
+              const tB = (b.attributes?.title?.en || Object.values(b.attributes?.title || {})[0] || '').toLowerCase();
+              return tA.localeCompare(tB);
+            });
+          } else if (sortType === 'za') {
+            list.sort((a,b) => {
+              const tA = (a.attributes?.title?.en || Object.values(a.attributes?.title || {})[0] || '').toLowerCase();
+              const tB = (b.attributes?.title?.en || Object.values(b.attributes?.title || {})[0] || '').toLowerCase();
+              return tB.localeCompare(tA);
+            });
+          }
         }
+
+        list.forEach(manga => {
+          const card = createMangaCard(manga);
+          if (card) grid.appendChild(card);
+        });
       } catch(err) {
         console.error("Manga List error", err);
       } finally {
@@ -1387,7 +1419,26 @@ document.addEventListener('DOMContentLoaded', () => {
           worksGrid.innerHTML = '<div style="color: var(--text-main);">Works unavailable.</div>';
         }
       } catch(err) {
-         console.error("Author fetch error", err);
+         console.warn("Author fetch error", err);
+         const worksGrid = authorBox.querySelector('.creator-works-grid');
+         if (worksGrid) {
+           worksGrid.innerHTML = '';
+           const matched = (allMangaDataCache || []).filter(m => {
+             const t = (m.attributes?.title?.en || Object.values(m.attributes?.title || {})[0] || '').toLowerCase();
+             if (author.name.includes('Kaneshiro') && t.includes('blue lock')) return true;
+             if (author.name.includes('Isayama') && t.includes('titan')) return true;
+             if (author.name.includes('Oda') && t.includes('one piece')) return true;
+             return false;
+           });
+           if (matched.length > 0) {
+             matched.forEach(m => {
+               const card = createMangaCard(m);
+               if (card) worksGrid.appendChild(card);
+             });
+           } else {
+             worksGrid.innerHTML = '<div style="color: var(--text-main);">Works available in catalog.</div>';
+           }
+         }
       }
     }
   }
@@ -1404,18 +1455,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     emptyMsg.style.display = 'none';
     
-    const fetchPromises = bookmarks.map(b => 
-      fetchMangaDex(`https://api.mangadex.org/manga/${b.id}?includes[]=cover_art`)
-    );
-
-    Promise.all(fetchPromises).then(results => {
-      results.forEach(res => {
-        if(res.data) {
-          const card = createMangaCard(res.data);
-          if (card) grid.appendChild(card);
-        }
-      });
-    }).catch(err => console.error("Favorites fetch err", err));
+    bookmarks.forEach(b => {
+      let manga = (allMangaDataCache || []).find(m => m.id === b.id);
+      if (manga) {
+        const card = createMangaCard(manga);
+        if (card) grid.appendChild(card);
+      } else {
+        fetchMangaDex(`https://api.mangadex.org/manga/${b.id}?includes[]=cover_art`).then(res => {
+          if (res?.data) {
+            const card = createMangaCard(res.data);
+            if (card) grid.appendChild(card);
+          }
+        }).catch(() => {});
+      }
+    });
   }
 
 });
